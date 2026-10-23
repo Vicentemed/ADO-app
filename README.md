@@ -130,6 +130,9 @@ La interfaz es genérica: cada análisis se **declara** con `ado_register()` en 
 ## Autor
 
 Dr. Vicente Esparza-Villalpando.
+
 Universidad Autónoma de Aguascalientes
+
 Centro de Ciencias de la Salud
+
 Departamento de Estomatología
