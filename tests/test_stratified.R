@@ -7,11 +7,11 @@ ok <- function(cond, msg) cat(if (isTRUE(cond)) "OK   " else "FALLA", msg, "\n")
 
 d <- load_any("C:/Escritorio 2026/CARPETAS/Protocolos/Dr. Raul Valdivia/Tesis Raul/dat24h.xlsx", "dat24h.xlsx")
 resp <- grep("VIAB", names(d), value = TRUE, ignore.case = TRUE)[1]
-s <- cdo_get("t_indep"); v <- list(response = resp, group = "MAT"); st <- "PROP"
+s <- ado_get("t_indep"); v <- list(response = resp, group = "MAT"); st <- "PROP"
 L <- split(d, fac(d, st)); names(L) <- paste0(st, " = ", names(L))
 ok(length(L) == 4, "4 estratos de PROP")
 
-spec_for <- function(a) if (isTRUE(a$decision$parametric)) s else cdo_get(s$alternative)
+spec_for <- function(a) if (isTRUE(a$decision$parametric)) s else ado_get(s$alternative)
 blocks <- lapply(names(L), function(nm) { dd <- L[[nm]]
   a <- s$assumptions(dd, v); sr <- spec_for(a); r <- sr$run(dd, v, list()); ph <- if (!is.null(sr$posthoc)) sr$posthoc(r, dd, v, list()) else NULL
   cat("   ", nm, "→", sr$id, "| p =", fmt_num(r$stats$p, 3), "\n")

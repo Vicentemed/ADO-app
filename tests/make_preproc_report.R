@@ -3,7 +3,7 @@ suppressPackageStartupMessages(library(ggplot2))
 for (f in c("00_config.R", "01_registry.R", "02_data.R", "03_assumptions.R", "04_descriptives.R",
             "05_plots.R", "06_report.R")) source(file.path("R", f), encoding = "UTF-8")
 for (f in list.files(file.path("R", "analyses"), full.names = TRUE)) source(f, encoding = "UTF-8")
-s <- cdo_get("wilcox_sr"); raw <- s$example$prep(read_book_data(file.path("data", s$example$file)))
+s <- ado_get("wilcox_sr"); raw <- s$example$prep(read_book_data(file.path("data", s$example$file)))
 d <- raw[raw$Ed > 20, ]; d <- d[setdiff(names(d), c("Tot8", "Tremed"))]
 lg <- c("Filtro (expresión): Ed > 20", "Removidas: Tot8, Tremed")
 v <- s$example$vars; a <- s$assumptions(d, v); r <- s$run(d, v, list())

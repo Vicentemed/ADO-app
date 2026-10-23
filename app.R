@@ -1,5 +1,5 @@
 # =============================================================================
-# app.R — CDO: asistente de análisis guiado (Ciencia de Datos en Odontología)
+# app.R — ADO: asistente de análisis guiado (Análisis de Datos en Odontología)
 # Flujo: análisis → datos → preprocesar → variables (+ estrato opcional) →
 #        descriptiva → supuestos/decisión → análisis → post-hoc → gráficos → reporte Word
 # Si se elige una variable de estratificación, TODA la secuencia se ejecuta
@@ -13,7 +13,7 @@ for (f in list.files(file.path("R", "analyses"), full.names = TRUE)) source(f, e
 STEPS <- c("1. Datos", "2. Preprocesar", "3. Variables", "4. Descriptiva", "5. Supuestos", "6. Análisis", "7. Post-hoc", "8. Gráficos", "9. Reporte")
 
 ui <- page_sidebar(
-  title = tags$span(tags$b("CDO"), " · Asistente de análisis — ", tags$i("Ciencia de Datos en Odontología")),
+  title = tags$span(tags$b("ADO"), " · Asistente de análisis — ", tags$i("Análisis de Datos en Odontología")),
   theme = bs_theme(version = 5, bootswatch = "flatly", primary = "#2E86C1"),
   tags$head(tags$link(rel = "stylesheet", href = "style.css")),
   sidebar = sidebar(width = 330, open = TRUE,
@@ -73,8 +73,8 @@ ui <- page_sidebar(
 server <- function(input, output, session) {
   # ---- análisis --------------------------------------------------------------
   output$analysis_ui <- renderUI({ req(input$family)
-    selectInput("analysis", "Análisis", choices = cdo_choices(input$family), selectize = FALSE, width = "100%") })
-  spec <- reactive({ req(input$analysis); req(cdo_has(input$analysis)); cdo_get(input$analysis) })
+    selectInput("analysis", "Análisis", choices = ado_choices(input$family), selectize = FALSE, width = "100%") })
+  spec <- reactive({ req(input$analysis); req(ado_has(input$analysis)); ado_get(input$analysis) })
   output$analysis_desc <- renderUI({ s <- spec(); tags$p(class = "small text-muted", s$description, tags$br(), tags$i("Capítulo: ", s$chapter)) })
   output$example_note <- renderUI({ s <- spec(); tags$p(class = "small", tags$b(s$example$file), " — ", s$example$note) })
 
@@ -135,9 +135,9 @@ server <- function(input, output, session) {
     lapply(L, function(dd) tryCatch(s$assumptions(dd, v()), error = function(e) list(checks = list(check_obj("error", "Error", NA, conditionMessage(e))), decision = list(parametric = TRUE, all_met = NA, violated = character(0), reason = paste("No se pudieron evaluar los supuestos:", conditionMessage(e)))))) })
   output$path_ui <- renderUI({ s <- spec(); if (is.null(s$alternative)) return(NULL)
     radioButtons("path", "Ruta a seguir", inline = TRUE,
-                 choices = setNames(c("auto", "primary", "alt"), c("Automática según los supuestos (regla del libro)", s$label, cdo_get(s$alternative)$label)), selected = "auto") })
+                 choices = setNames(c("auto", "primary", "alt"), c("Automática según los supuestos (regla del libro)", s$label, ado_get(s$alternative)$label)), selected = "auto") })
   spec_for <- function(a) { s <- spec(); if (is.null(s$alternative)) return(s); p <- input$path %||% "auto"
-    if (identical(p, "alt")) cdo_get(s$alternative) else if (identical(p, "primary")) s else if (isTRUE(a$decision$parametric)) s else cdo_get(s$alternative) }
+    if (identical(p, "alt")) ado_get(s$alternative) else if (identical(p, "primary")) s else if (isTRUE(a$decision$parametric)) s else ado_get(s$alternative) }
   output$checks_ui <- renderUI({ A <- assump_list(); s <- spec()
     strata_tabs(names(A), function(i) { a <- A[[i]]; sr <- spec_for(a)
       tagList(tags$div(class = if (isTRUE(a$decision$parametric)) "alert alert-success py-2" else "alert alert-warning py-2", tags$b(a$decision$reason), tags$br(), "Prueba que se ejecutará: ", tags$b(sr$label)),
@@ -177,7 +177,7 @@ server <- function(input, output, session) {
     lapply(seq_along(R), function(i) { x <- R[[i]]; if (is.null(x$res)) return("No se pudo ejecutar el análisis en este estrato.")
       tryCatch(x$spec$report(x$res, L[[i]], v(), A[[i]]$checks), error = function(e) paste("No se pudo generar el texto:", conditionMessage(e))) }) })
   output$report_ui <- renderUI({ R <- res_list(); req(R); T <- report_list()
-    strata_tabs(sapply(R, `[[`, "name"), function(i) tags$div(class = "cdo-report", markdown(T[[i]]))) })
+    strata_tabs(sapply(R, `[[`, "name"), function(i) tags$div(class = "ado-report", markdown(T[[i]]))) })
 
   output$download <- downloadHandler(
     filename = function() { tt <- trimws(input$rep_title %||% "")

@@ -2,8 +2,6 @@
 
 Aplicación web en **R / Shiny** que acompaña al libro **_Análisis de Datos en Odontología. Un enfoque pragmático con R_**. Reúne todo el código estadístico usado en el libro en un asistente paso a paso: el usuario elige el tipo de análisis, carga sus datos (o usa los ejemplos del libro), selecciona las variables, y la app verifica los supuestos, decide la prueba adecuada siguiendo la regla del libro, ejecuta el análisis, genera los gráficos y produce un reporte en Word listo para editar.
 
-> El código y la interfaz usan la sigla **CDO**, que corresponde al título original de la obra (_Ciencia de Datos en Odontología_). El contenido es el mismo.
-
 ## Contenido del repositorio
 
 ```
@@ -11,7 +9,7 @@ ADO-app/
 ├── app.R                  # Interfaz y servidor Shiny (flujo de 9 pasos)
 ├── R/
 │   ├── 00_config.R        # Configuración global: alfa, paleta, formateadores, tamaños de efecto
-│   ├── 01_registry.R      # Registro genérico de análisis (cdo_register) y regla de decisión
+│   ├── 01_registry.R      # Registro genérico de análisis (ado_register) y regla de decisión
 │   ├── 02_data.R          # Lectura de datos (.txt/.tsv/.csv/.xlsx), saneado de nombres, roles de variables
 │   ├── 03_assumptions.R   # Verificación de supuestos (normalidad, homogeneidad de varianzas, etc.)
 │   ├── 04_descriptives.R  # Estadística descriptiva (table1)
@@ -127,7 +125,7 @@ Rscript tests/smoke_test.R
 
 ## Cómo agregar un análisis
 
-La interfaz es genérica: cada análisis se **declara** con `cdo_register()` en un archivo de `R/analyses/`. La declaración indica la familia, el capítulo, los roles de variables que pide, el ejemplo del libro, y las funciones de descriptiva, supuestos, ejecución, post-hoc, gráficos y texto de reporte. El esquema completo está documentado al inicio de `R/01_registry.R`. Al agregar una entrada, la app la muestra automáticamente en el selector y el `smoke_test.R` la ejecuta.
+La interfaz es genérica: cada análisis se **declara** con `ado_register()` en un archivo de `R/analyses/`. La declaración indica la familia, el capítulo, los roles de variables que pide, el ejemplo del libro, y las funciones de descriptiva, supuestos, ejecución, post-hoc, gráficos y texto de reporte. El esquema completo está documentado al inicio de `R/01_registry.R`. Al agregar una entrada, la app la muestra automáticamente en el selector y el `smoke_test.R` la ejecuta.
 
 ## Autor
 

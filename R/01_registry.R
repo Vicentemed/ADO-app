@@ -1,6 +1,6 @@
 # =============================================================================
 # 01_registry.R — Registro genérico de análisis
-# Cada análisis se DECLARA con cdo_register(); la interfaz es genérica.
+# Cada análisis se DECLARA con ado_register(); la interfaz es genérica.
 #
 # Esquema de una entrada (spec):
 #   id, family, label, order, description, chapter
@@ -19,12 +19,12 @@
 # El registro vive en options(): es único para todo el proceso, sin importar
 # en qué entorno haya sido cargado cada archivo (Shiny carga app.R y los
 # archivos anidados en un entorno local, no en el global).
-.cdo_env <- function() {
-  e <- getOption("cdo.registry")
-  if (is.null(e)) { e <- new.env(parent = emptyenv()); options(cdo.registry = e) }
+.ado_env <- function() {
+  e <- getOption("ado.registry")
+  if (is.null(e)) { e <- new.env(parent = emptyenv()); options(ado.registry = e) }
   e
 }
-.CDO_REGISTRY <- .cdo_env()
+.ADO_REGISTRY <- .ado_env()
 
 FAMILIES <- c(
   medias        = "Comparación de medias",
@@ -42,25 +42,25 @@ role <- function(label, type = c("numeric", "factor", "binary", "id", "time", "e
        nlevels = nlevels, min = min, help = help)
 }
 
-cdo_register <- function(spec) {
+ado_register <- function(spec) {
   stopifnot(is.list(spec), !is.null(spec$id), !is.null(spec$family))
   if (is.null(spec$order)) spec$order <- 99
   if (is.null(spec$plots)) spec$plots <- list()
   if (is.null(spec$opts_ui)) spec$opts_ui <- list()
-  assign(spec$id, spec, envir = .cdo_env())
+  assign(spec$id, spec, envir = .ado_env())
   invisible(spec)
 }
-cdo_get  <- function(id) get(id, envir = .cdo_env(), inherits = FALSE)
-cdo_has  <- function(id) exists(id, envir = .cdo_env(), inherits = FALSE)
-cdo_list <- function(family = NULL) {
-  ids <- ls(.cdo_env())
-  specs <- lapply(ids, cdo_get)
+ado_get  <- function(id) get(id, envir = .ado_env(), inherits = FALSE)
+ado_has  <- function(id) exists(id, envir = .ado_env(), inherits = FALSE)
+ado_list <- function(family = NULL) {
+  ids <- ls(.ado_env())
+  specs <- lapply(ids, ado_get)
   if (!is.null(family)) specs <- Filter(function(s) identical(s$family, family), specs)
   ord <- order(sapply(specs, function(s) s$family), sapply(specs, function(s) s$order))
   specs[ord]
 }
-cdo_choices <- function(family) {
-  sp <- cdo_list(family)
+ado_choices <- function(family) {
+  sp <- ado_list(family)
   setNames(sapply(sp, `[[`, "id"), sapply(sp, `[[`, "label"))
 }
 

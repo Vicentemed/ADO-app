@@ -1,5 +1,5 @@
 # tests/test_preproc.R — prueba de las utilidades de preprocesamiento (sin Shiny)
-# Uso: Rscript tests/test_preproc.R   (desde CDO-app)
+# Uso: Rscript tests/test_preproc.R   (desde ADO-app)
 for (f in c("00_config.R", "02_data.R")) source(file.path("R", f), encoding = "UTF-8")
 # cargar solo las funciones puras del módulo (sin UI)
 src <- readLines(file.path("R", "08_preproc.R"), encoding = "UTF-8")

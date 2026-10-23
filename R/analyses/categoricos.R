@@ -11,7 +11,7 @@
 .cramer <- function(tab) { ct <- suppressWarnings(chisq.test(tab, correct = FALSE)); N <- sum(tab); k <- min(dim(tab)); sqrt(as.numeric(ct$statistic) / (N * (k - 1))) }
 .tab_df <- function(tab) { m <- addmargins(tab); data.frame(Fila = rownames(m), as.data.frame.matrix(m), check.names = FALSE, row.names = NULL) }
 
-cdo_register(list(
+ado_register(list(
   id = "chi2", family = "categoricos", order = 1, label = "Chi-cuadrado de Pearson (asociación)",
   description = "Asociación entre dos variables categóricas (2×2 o r×c). Alternativa: Fisher exacta.",
   chapter = "Chi-cuadrado con Prueba exacta de Fisher en R",
@@ -56,7 +56,7 @@ cdo_register(list(
   }
 ))
 
-cdo_register(list(
+ado_register(list(
   id = "fisher", family = "categoricos", order = 2, label = "Prueba exacta de Fisher",
   description = "Para frecuencias esperadas < 5 o N < 40 (tablas r×c: Freeman-Halton).",
   chapter = "Prueba exacta de Fisher",
@@ -84,7 +84,7 @@ cdo_register(list(
   }
 ))
 
-cdo_register(list(
+ado_register(list(
   id = "mcnemar", family = "categoricos", order = 3, label = "Prueba de McNemar (apareada)",
   description = "Cambio en una respuesta binaria del mismo sujeto entre dos condiciones (tabla apareada).",
   chapter = "Prueba de McNemar en R",

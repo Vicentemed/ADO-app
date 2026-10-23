@@ -8,7 +8,7 @@
 build_report <- function(ctx, out_docx, template = file.path("report", "report_template.Rmd")) {
   stopifnot(file.exists(template))
   # copia temporal del template para no escribir junto al original
-  tmpdir <- tempfile("cdo_rep_"); dir.create(tmpdir)
+  tmpdir <- tempfile("ado_rep_"); dir.create(tmpdir)
   tpl <- file.path(tmpdir, "report.Rmd"); file.copy(template, tpl)
   rmarkdown::render(tpl, output_file = out_docx, output_dir = dirname(out_docx),
                     params = list(ctx = ctx), envir = new.env(parent = globalenv()), quiet = TRUE)

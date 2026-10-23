@@ -17,7 +17,7 @@ r_from_z <- function(p, N) abs(qnorm(p / 2)) / sqrt(N)
 # =============================================================================
 # 1. t de Student independiente  (alt: Wilcoxon suma de rangos)
 # =============================================================================
-cdo_register(list(
+ado_register(list(
   id = "t_indep", family = "medias", order = 1,
   label = "Prueba t independiente (dos grupos)",
   description = "Compara la media de dos grupos independientes. Alternativa: Wilcoxon suma de rangos.",
@@ -69,7 +69,7 @@ cdo_register(list(
 # =============================================================================
 # 2. Wilcoxon suma de rangos (Mann-Whitney)
 # =============================================================================
-cdo_register(list(
+ado_register(list(
   id = "wilcox_rs", family = "medias", order = 2,
   label = "Wilcoxon suma de rangos (Mann-Whitney)",
   description = "Alternativa no paramétrica a la prueba t independiente.",
@@ -117,7 +117,7 @@ cdo_register(list(
 # =============================================================================
 .paired_diff <- function(d, v) { a <- num(d, v$measures[1]); b <- num(d, v$measures[2]); ok <- !is.na(a) & !is.na(b); list(a = a[ok], b = b[ok], dif = a[ok] - b[ok]) }
 
-cdo_register(list(
+ado_register(list(
   id = "t_paired", family = "medias", order = 3,
   label = "Prueba t apareada (antes/después)",
   description = "Compara dos mediciones del mismo sujeto. Alternativa: Wilcoxon de rangos con signo.",
@@ -165,7 +165,7 @@ cdo_register(list(
 # =============================================================================
 # 4. Wilcoxon rangos con signo
 # =============================================================================
-cdo_register(list(
+ado_register(list(
   id = "wilcox_sr", family = "medias", order = 4,
   label = "Wilcoxon de rangos con signo (apareado)",
   description = "Alternativa no paramétrica a la prueba t apareada.",
@@ -218,7 +218,7 @@ cdo_register(list(
              p = as.numeric(s$test$pvalues), check.names = FALSE, row.names = NULL)
 }
 
-cdo_register(list(
+ado_register(list(
   id = "anova1", family = "medias", order = 5,
   label = "ANOVA de una vía (≥ 3 grupos)",
   description = "Compara la media de tres o más grupos independientes. Alternativa: Kruskal-Wallis.",
@@ -284,7 +284,7 @@ cdo_register(list(
 # =============================================================================
 # 6. Kruskal-Wallis
 # =============================================================================
-cdo_register(list(
+ado_register(list(
   id = "kruskal", family = "medias", order = 6,
   label = "Kruskal-Wallis (≥ 3 grupos)",
   description = "Alternativa no paramétrica al ANOVA de una vía.",
@@ -339,7 +339,7 @@ cdo_register(list(
   # sujetos completos
   full <- names(which(table(long$Px) == length(v$measures))); long <- long[long$Px %in% full, ]; long$Px <- droplevels(long$Px); long }
 
-cdo_register(list(
+ado_register(list(
   id = "rm_anova", family = "medias", order = 7,
   label = "ANOVA de medidas repetidas (≥ 3 tiempos)",
   description = "Compara ≥ 3 mediciones del mismo sujeto. Alternativa: ANOVA de Friedman.",
@@ -392,7 +392,7 @@ cdo_register(list(
 # =============================================================================
 # 8. ANOVA de Friedman
 # =============================================================================
-cdo_register(list(
+ado_register(list(
   id = "friedman", family = "medias", order = 8,
   label = "ANOVA de Friedman (≥ 3 tiempos)",
   description = "Alternativa no paramétrica al ANOVA de medidas repetidas.",
@@ -441,7 +441,7 @@ cdo_register(list(
 # =============================================================================
 # 9. ANOVA factorial (dos vías) — sin alternativa NP en el libro
 # =============================================================================
-cdo_register(list(
+ado_register(list(
   id = "factorial", family = "medias", order = 9,
   label = "ANOVA factorial (dos factores)",
   description = "Efectos principales e interacción de dos factores. Suma de cuadrados tipo III (car::Anova).",
@@ -501,7 +501,7 @@ cdo_register(list(
 # =============================================================================
 # 10. ANCOVA — sin alternativa NP en el libro
 # =============================================================================
-cdo_register(list(
+ado_register(list(
   id = "ancova", family = "medias", order = 10,
   label = "ANCOVA (grupo + covariable)",
   description = "Compara grupos ajustando por una covariable. Verifica independencia de la covariable y homogeneidad de pendientes.",

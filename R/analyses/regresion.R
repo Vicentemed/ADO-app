@@ -18,7 +18,7 @@
   df
 }
 
-cdo_register(list(
+ado_register(list(
   id = "lineal", family = "regresion", order = 1, label = "Regresión lineal múltiple",
   description = "Predice una respuesta continua a partir de varios predictores (lm). Diagnósticos: VIF, residuos, Cook, Durbin-Watson.",
   chapter = "Regresión lineal múltiple en R",
@@ -71,7 +71,7 @@ cdo_register(list(
   }
 ))
 
-cdo_register(list(
+ado_register(list(
   id = "logistica", family = "regresion", order = 2, label = "Regresión logística",
   description = "Predice una respuesta binaria (glm binomial). OR con IC, razón de verosimilitud, Hosmer-Lemeshow, ROC/AUC.",
   chapter = "Regresión logística en R",

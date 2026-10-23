@@ -1,6 +1,6 @@
 ---
 title: "`r params$ctx$title`"
-subtitle: "`r paste0(if (!is.null(params$ctx$subtitle)) paste0(params$ctx$subtitle, ' · ') else '', 'Generado con la app CDO — *Ciencia de Datos en Odontología. Un enfoque pragmático con R*')`"
+subtitle: "`r paste0(if (!is.null(params$ctx$subtitle)) paste0(params$ctx$subtitle, ' · ') else '', 'Generado con la app ADO — *Análisis de Datos en Odontología. Un enfoque pragmático con R*')`"
 date: "`r format(Sys.Date(), '%d de %B de %Y')`"
 output:
   word_document:

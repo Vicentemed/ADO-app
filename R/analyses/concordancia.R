@@ -9,7 +9,7 @@ landis <- function(k) { if (is.na(k)) return("…"); if (k < 0) "sin acuerdo" el
 koo_li <- function(i) { if (is.na(i)) return("…"); if (i < 0.5) "pobre" else if (i < 0.75) "moderada" else if (i < 0.9) "buena" else "excelente" }
 ccc_band <- function(r) { if (is.na(r)) return("…"); if (r < 0.90) "pobre" else if (r < 0.95) "moderada" else if (r < 0.99) "sustancial" else "casi perfecta" }
 
-cdo_register(list(
+ado_register(list(
   id = "kappa", family = "concordancia", order = 1, label = "Kappa de Cohen (2 evaluadores; ponderado si ordinal)",
   description = "Acuerdo entre dos evaluadores en una escala categórica. Con > 2 evaluadores calcula además Fleiss.",
   chapter = "Kappa en R",
@@ -54,7 +54,7 @@ cdo_register(list(
   }
 ))
 
-cdo_register(list(
+ado_register(list(
   id = "icc", family = "concordancia", order = 2, label = "Coeficiente de correlación intraclase (ICC)",
   description = "Acuerdo entre ≥ 2 evaluadores en una variable continua (irr::icc, modelos de Shrout-Fleiss).",
   chapter = "ICC en R",
@@ -96,7 +96,7 @@ cdo_register(list(
   bias <- mean(dif); sd_d <- sd(dif); n <- length(dif); se <- sd_d / sqrt(n); tc <- qt(0.975, n - 1)
   list(bias = bias, sd = sd_d, loa_l = bias - 1.96 * sd_d, loa_u = bias + 1.96 * sd_d, ci_lo = bias - tc * se, ci_hi = bias + tc * se, ref = mean(prom), n = n, dif = dif) }
 
-cdo_register(list(
+ado_register(list(
   id = "bland_altman", family = "concordancia", order = 3, label = "Bland-Altman (dos métodos continuos)",
   description = "Sesgo y límites de acuerdo entre un método y una referencia. Alternativa: CCC de Lin si las diferencias no son normales.",
   chapter = "Bland-Altman en R",
@@ -126,7 +126,7 @@ cdo_register(list(
   }
 ))
 
-cdo_register(list(
+ado_register(list(
   id = "ccc", family = "concordancia", order = 4, label = "Coeficiente de concordancia de Lin (CCC)",
   description = "Índice único de concordancia (precisión × exactitud) entre dos métodos continuos; robusto si las diferencias no son normales.",
   chapter = "CCC de Lin en R",

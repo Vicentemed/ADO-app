@@ -14,7 +14,7 @@
 .surv_at <- function(fit, t) { s <- tryCatch(summary(fit, times = t, extend = TRUE), error = function(e) NULL)
   if (is.null(s)) return(NULL); data.frame(Estrato = if (is.null(s$strata)) "Global" else as.character(s$strata), Tiempo = s$time, `En riesgo` = s$n.risk, Eventos = s$n.event, `S(t)` = s$surv, `IC inf` = s$lower, `IC sup` = s$upper, check.names = FALSE) }
 
-cdo_register(list(
+ado_register(list(
   id = "km", family = "supervivencia", order = 1, label = "Kaplan-Meier y prueba log-rank",
   description = "Curvas de supervivencia (global y por grupo) y comparación con log-rank.",
   chapter = "Kaplan-Meier y prueba log-rank en R",
@@ -66,7 +66,7 @@ cdo_register(list(
   }
 ))
 
-cdo_register(list(
+ado_register(list(
   id = "cox", family = "supervivencia", order = 2, label = "Regresión de Cox (riesgos proporcionales)",
   description = "Hazard ratios ajustados por covariables; verifica VIF, eventos por covariable y riesgos proporcionales (Schoenfeld).",
   chapter = "Regresión de Cox en R",

@@ -34,7 +34,7 @@ efecto_cor <- function(r) { r <- abs(r); if (is.na(r)) "…" else if (r < 0.1) "
   qqx = list(label = "Q-Q de X", fn = function(d, v, res, cos) plot_qq(num(d, v$x), paste("Q-Q:", v$x), cos)),
   qqy = list(label = "Q-Q de Y", fn = function(d, v, res, cos) plot_qq(num(d, v$y), paste("Q-Q:", v$y), cos)))
 
-cdo_register(list(
+ado_register(list(
   id = "pearson", family = "correlacion", order = 1, label = "Correlación de Pearson",
   description = "Relación lineal entre dos variables numéricas normales. Alternativa: Spearman.",
   chapter = "Correlaciones", roles = .cor_roles,
@@ -45,7 +45,7 @@ cdo_register(list(
   run = function(d, v, opts) .cor_run(d, v, "pearson"), posthoc = NULL, plots = .cor_plots(FALSE),
   report = function(res, d, v, checks) .cor_report(res, d, v, checks, "pearson")
 ))
-cdo_register(list(
+ado_register(list(
   id = "spearman", family = "correlacion", order = 2, label = "Correlación de Spearman (ρ)",
   description = "Alternativa no paramétrica de Pearson: variables no normales u ordinales.",
   chapter = "Correlaciones", roles = .cor_roles,
@@ -56,7 +56,7 @@ cdo_register(list(
   run = function(d, v, opts) .cor_run(d, v, "spearman"), posthoc = NULL, plots = .cor_plots(TRUE),
   report = function(res, d, v, checks) .cor_report(res, d, v, checks, "spearman")
 ))
-cdo_register(list(
+ado_register(list(
   id = "kendall", family = "correlacion", order = 3, label = "Tau de Kendall (τ)",
   description = "Recomendada con datos ordinales de pocos niveles o muchos empates.",
   chapter = "Correlaciones", roles = .cor_roles,
@@ -68,7 +68,7 @@ cdo_register(list(
   report = function(res, d, v, checks) .cor_report(res, d, v, checks, "kendall")
 ))
 
-cdo_register(list(
+ado_register(list(
   id = "parcial", family = "correlacion", order = 4, label = "Correlación parcial (controlando Z)",
   description = "Correlación entre X e Y eliminando la influencia de una tercera variable Z (ggm::pcor).",
   chapter = "Correlaciones",
@@ -99,7 +99,7 @@ cdo_register(list(
   }
 ))
 
-cdo_register(list(
+ado_register(list(
   id = "pps", family = "correlacion", order = 5, label = "Predictive Power Score (PPS)",
   description = "Capacidad predictiva (asimétrica, no lineal) de varias variables sobre una respuesta (ppsr).",
   chapter = "Correlaciones",

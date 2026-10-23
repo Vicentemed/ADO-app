@@ -1,11 +1,11 @@
 # Genera un reporte Word de ejemplo (ANOVA de una vía, datos del libro) en report/
-# Uso: Rscript tests/make_example_report.R   (desde la carpeta CDO-app)
+# Uso: Rscript tests/make_example_report.R   (desde la carpeta ADO-app)
 suppressPackageStartupMessages(library(ggplot2))
 for (f in c("00_config.R", "01_registry.R", "02_data.R", "03_assumptions.R", "04_descriptives.R",
             "05_plots.R", "06_report.R")) source(file.path("R", f), encoding = "UTF-8")
 for (f in list.files(file.path("R", "analyses"), full.names = TRUE)) source(f, encoding = "UTF-8")
 
-s  <- cdo_get("anova1")
+s  <- ado_get("anova1")
 d  <- s$example$prep(read_book_data(file.path("data", s$example$file)))
 v  <- s$example$vars
 t1 <- s$descriptives(d, v)

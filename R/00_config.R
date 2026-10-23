@@ -1,16 +1,16 @@
 # =============================================================================
-# 00_config.R — Configuración global de la app CDO
-# (Ciencia de Datos en Odontología. Un enfoque pragmático con R)
+# 00_config.R — Configuración global de la app ADO
+# (Análisis de Datos en Odontología. Un enfoque pragmático con R)
 # Estilo: R base, como en el libro.
 # =============================================================================
 
 ALPHA <- 0.05
 
 # Paleta y tema del libro (ver cap. Resumen de datos y familia de medias)
-CDO_COL  <- c("#2E86C1", "#E74C3C", "#27AE60", "#F39C12", "#8E44AD", "#555555")
-CDO_FILL <- c("#AED6F1", "#FADBD8", "#A9DFBF", "#FDEBD0", "#E8DAEF", "#D5D8DC")
+ADO_COL  <- c("#2E86C1", "#E74C3C", "#27AE60", "#F39C12", "#8E44AD", "#555555")
+ADO_FILL <- c("#AED6F1", "#FADBD8", "#A9DFBF", "#FDEBD0", "#E8DAEF", "#D5D8DC")
 
-cdo_theme <- function(base_size = 12) ggplot2::theme_bw(base_size = base_size)
+ado_theme <- function(base_size = 12) ggplot2::theme_bw(base_size = base_size)
 
 # pandoc para rmarkdown cuando la app corre fuera de RStudio (reporte Word)
 if (!rmarkdown::pandoc_available()) {

@@ -6,7 +6,7 @@
 library(ggplot2)
 
 cos_default <- function() list(
-  fill      = CDO_FILL, colour = CDO_COL,
+  fill      = ADO_FILL, colour = ADO_COL,
   base_size = 12, title = "", xlab = NULL, ylab = NULL,
   jitter = TRUE, show_center = TRUE, show_ci = TRUE, legend = FALSE,
   point_alpha = 0.55, point_size = 2.5
@@ -15,7 +15,7 @@ cos_merge <- function(cos) { d <- cos_default(); for (n in names(cos)) d[[n]] <-
 .lab <- function(cos, what, default) if (is.null(cos[[what]]) || !nzchar(cos[[what]])) default else cos[[what]]
 .finish <- function(p, cos, xlab, ylab) {
   p + labs(title = if (nzchar(cos$title)) cos$title else NULL, x = .lab(cos, "xlab", xlab), y = .lab(cos, "ylab", ylab)) +
-    cdo_theme(cos$base_size) + theme(legend.position = if (isTRUE(cos$legend)) "bottom" else "none")
+    ado_theme(cos$base_size) + theme(legend.position = if (isTRUE(cos$legend)) "bottom" else "none")
 }
 .fillN <- function(cos, k) rep_len(cos$fill, k)
 .colN  <- function(cos, k) rep_len(cos$colour, k)
@@ -155,7 +155,7 @@ plot_km <- function(fit, d, cos = list(), pval = FALSE, risk_table = FALSE, lege
   args <- list(fit, data = d, conf.int = cos$show_ci, pval = pval, risk.table = risk_table,
                palette = .colN(cos, k), xlab = .lab(cos, "xlab", "Tiempo"),
                ylab = .lab(cos, "ylab", "Probabilidad de supervivencia S(t)"),
-               ggtheme = cdo_theme(cos$base_size), title = if (nzchar(cos$title)) cos$title else NULL)
+               ggtheme = ado_theme(cos$base_size), title = if (nzchar(cos$title)) cos$title else NULL)
   if (!is.null(legend_labs)) args$legend.labs <- legend_labs
   if (risk_table) { args$tables.height <- 0.25; args$tables.theme <- survminer::theme_cleantable() }
   do.call(survminer::ggsurvplot, args)

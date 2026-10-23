@@ -38,7 +38,7 @@ read_opts <- function(input, prefix, spec) {
 
 # ---- Parámetros cosméticos de los gráficos ----------------------------------------
 PALETTES <- list(
-  "Libro (azul/rojo/verde)" = list(colour = CDO_COL, fill = CDO_FILL),
+  "Libro (azul/rojo/verde)" = list(colour = ADO_COL, fill = ADO_FILL),
   "Escala de grises"        = list(colour = c("#222222", "#666666", "#999999", "#BBBBBB", "#DDDDDD", "#444444"), fill = c("#D9D9D9", "#BFBFBF", "#A6A6A6", "#8C8C8C", "#737373", "#595959")),
   "Viridis"                 = list(colour = c("#440154", "#31688E", "#35B779", "#FDE725", "#21918C", "#90D743"), fill = c("#B5A3CC", "#9DBBD6", "#A9E1BD", "#F8F2A3", "#A6D8D3", "#D4EDB5")),
   "Pastel"                  = list(colour = c("#8E9BFF", "#FF9E9E", "#8ED8A0", "#FFD08E", "#C99EFF", "#9EDCE8"), fill = c("#D3D8FF", "#FFD3D3", "#D3F0DA", "#FFEBD3", "#E7D3FF", "#D3F1F6"))
@@ -68,8 +68,8 @@ read_cos <- function(input, prefix = "cos") {
 # ---- Presentación de chequeos de supuestos ------------------------------------------
 checks_ui <- function(checks) {
   if (!length(checks)) return(tags$p("Este análisis no requiere verificación de supuestos."))
-  tags$ul(class = "cdo-checks", lapply(checks, function(ch) {
-    ico <- if (is.na(ch$met)) tags$span("ℹ", class = "cdo-ico cdo-info") else if (isTRUE(ch$met)) tags$span("✔", class = "cdo-ico cdo-ok") else tags$span("✘", class = "cdo-ico cdo-bad")
+  tags$ul(class = "ado-checks", lapply(checks, function(ch) {
+    ico <- if (is.na(ch$met)) tags$span("ℹ", class = "ado-ico ado-info") else if (isTRUE(ch$met)) tags$span("✔", class = "ado-ico ado-ok") else tags$span("✘", class = "ado-ico ado-bad")
     tags$li(ico, tags$b(ch$label), tags$br(), tags$span(ch$text))
   }))
 }

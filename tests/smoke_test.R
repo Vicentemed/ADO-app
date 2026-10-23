@@ -1,14 +1,14 @@
 # =============================================================================
 # tests/smoke_test.R — Ejecuta CADA análisis del registro sobre su ejemplo del
 # libro: descriptiva → supuestos → run → post-hoc → gráficos → texto → (1 docx)
-# Uso:  Rscript tests/smoke_test.R   (desde la carpeta CDO-app)
+# Uso:  Rscript tests/smoke_test.R   (desde la carpeta ADO-app)
 # =============================================================================
 suppressPackageStartupMessages({ library(ggplot2) })
 for (f in c("00_config.R", "01_registry.R", "02_data.R", "03_assumptions.R", "04_descriptives.R",
             "05_plots.R", "06_report.R")) source(file.path("R", f), encoding = "UTF-8")
 for (f in list.files(file.path("R", "analyses"), full.names = TRUE)) source(f, encoding = "UTF-8")
 
-specs <- cdo_list()
+specs <- ado_list()
 cat("Análisis registrados:", length(specs), "\n\n")
 results <- list(); first_ctx <- NULL
 
@@ -23,7 +23,7 @@ for (s in specs) {
     a  <- s$assumptions(d, v)
     stopifnot(is.list(a$checks), is.list(a$decision))
     # ruta según la decisión del libro
-    s_run <- if (!is.null(s$alternative) && !isTRUE(a$decision$parametric)) cdo_get(s$alternative) else s
+    s_run <- if (!is.null(s$alternative) && !isTRUE(a$decision$parametric)) ado_get(s$alternative) else s
     opts <- lapply(s_run$opts_ui, `[[`, "value")
     r <- s_run$run(d, v, opts)
     stopifnot(is.list(r$stats), is.list(r$tables))
@@ -52,5 +52,5 @@ if (any(res$estado == "FALLA")) { cat("\nFALLAS:\n"); print(res[res$estado == "F
 
 # Reporte Word con el primer análisis exitoso
 cat("\n== Reporte Word de prueba ==\n")
-tryCatch({ out <- file.path(tempdir(), "cdo_smoke.docx"); build_report(first_ctx, out); cat("docx generado:", out, "|", round(file.size(out) / 1024), "KB\n") },
+tryCatch({ out <- file.path(tempdir(), "ado_smoke.docx"); build_report(first_ctx, out); cat("docx generado:", out, "|", round(file.size(out) / 1024), "KB\n") },
          error = function(e) cat("FALLA docx:", conditionMessage(e), "\n"))
