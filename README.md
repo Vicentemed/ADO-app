@@ -34,7 +34,7 @@ ADO-app/
 
 ## Análisis disponibles
 
-Cada análisis está vinculado al capítulo del libro donde se explica y trae un conjunto de datos de ejemplo precargado. Cuando la prueba paramétrica tiene una alternativa no paramétrica, la app la propone automáticamente si se viola algún supuesto.
+Cada análisis está vinculado al capítulo del libro donde se explica con un conjunto de datos de ejemplo precargado. Cuando la prueba paramétrica tiene una alternativa no paramétrica, la app la propone automáticamente si se viola algún supuesto.
 
 | Familia | Análisis | Alternativa no paramétrica |
 |---|---|---|
