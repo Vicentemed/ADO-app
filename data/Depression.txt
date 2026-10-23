@@ -1,0 +1,51 @@
+treat	before	after
+No Treatment	13	16
+No Treatment	13	18
+No Treatment	19	13
+No Treatment	20	15
+No Treatment	18	18
+No Treatment	16	16
+No Treatment	16	18
+No Treatment	20	19
+No Treatment	15	9
+No Treatment	16	16
+Placebo	16	13
+Placebo	18	12
+Placebo	20	11
+Placebo	20	8
+Placebo	16	13
+Placebo	16	8
+Placebo	16	9
+Placebo	20	15
+Placebo	19	16
+Placebo	19	12
+Seroxat (Paxil)	17	15
+Seroxat (Paxil)	16	19
+Seroxat (Paxil)	20	14
+Seroxat (Paxil)	16	16
+Seroxat (Paxil)	17	10
+Seroxat (Paxil)	20	11
+Seroxat (Paxil)	16	11
+Seroxat (Paxil)	16	13
+Seroxat (Paxil)	19	15
+Seroxat (Paxil)	14	10
+Effexor	17	19
+Effexor	20	12
+Effexor	16	10
+Effexor	16	15
+Effexor	15	15
+Effexor	16	11
+Effexor	14	17
+Effexor	20	13
+Effexor	20	12
+Effexor	16	18
+NewDrug	17	11
+NewDrug	18	10
+NewDrug	20	13
+NewDrug	18	5
+NewDrug	17	10
+NewDrug	16	11
+NewDrug	19	11
+NewDrug	20	14
+NewDrug	17	7
+NewDrug	20	12

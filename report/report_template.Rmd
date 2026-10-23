@@ -1,0 +1,94 @@
+---
+title: "`r params$ctx$title`"
+subtitle: "`r paste0(if (!is.null(params$ctx$subtitle)) paste0(params$ctx$subtitle, ' · ') else '', 'Generado con la app CDO — *Ciencia de Datos en Odontología. Un enfoque pragmático con R*')`"
+date: "`r format(Sys.Date(), '%d de %B de %Y')`"
+output:
+  word_document:
+    toc: false
+params:
+  ctx: NULL
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.width = 7, fig.height = 4.5, dpi = 150, fig.keep = "all")
+ctx <- params$ctx
+draw <- function(p) { if (is.function(p)) p() else print(p) }
+kb <- function(df, digits = 3) { if (is.null(df) || !is.data.frame(df) || !nrow(df)) return(invisible(NULL))
+  num <- sapply(df, is.numeric); df[num] <- lapply(df[num], function(x) round(x, digits)); knitr::kable(df) }
+# Compatibilidad: si el ctx viene "plano" (sin bloques), se envuelve como un solo bloque
+blocks <- if (!is.null(ctx$blocks)) ctx$blocks else list(list(name = NULL, n = ctx$n_proc, analysis = ctx$analysis, t1 = ctx$t1, checks = ctx$checks,
+  decision = ctx$decision, tables = ctx$tables, posthoc_tables = ctx$posthoc_tables, plots = ctx$plots, plot_labels = ctx$plot_labels,
+  report_md = ctx$report_md, notes = ctx$notes))
+strat <- length(blocks) > 1
+H <- function(level, txt) cat("\n", strrep("#", level), " ", txt, "\n\n", sep = "")
+```
+
+# 1. Contexto del estudio
+
+`r ctx$contexto`
+
+**Análisis:** `r ctx$analysis` (familia: `r ctx$family`; capítulo de referencia: *`r ctx$chapter`*).
+**Datos:** `r ctx$dataset`. **Variables:** `r paste(names(ctx$vars), "=", sapply(ctx$vars, function(x) paste(x, collapse = ", ")), collapse = "; ")`.
+`r if (!is.null(ctx$strata)) paste0("**Análisis estratificado por ", ctx$strata, ":** ", length(blocks), " subanálisis (uno por nivel), cada uno con su propia verificación de supuestos y decisión.")`
+
+```{r preproc, results='asis'}
+if (length(ctx$preproc_log)) {
+  H(2, "Preprocesamiento de los datos")
+  cat("Datos originales: ", ctx$k_raw, " variables × ", ctx$n_raw, " observaciones; tras el preprocesamiento: ",
+      ctx$k_proc, " variables × ", ctx$n_proc, " observaciones. Operaciones aplicadas, en orden:\n\n", sep = "")
+  for (i in seq_along(ctx$preproc_log)) cat(i, ". ", ctx$preproc_log[i], "\n", sep = "")
+  cat("\n")
+}
+```
+
+```{r blocks, results='asis'}
+sec <- 1
+for (b in blocks) {
+  sec <- sec + 1
+  # Con estratos: un capítulo por estrato con subsecciones; sin estratos: secciones numeradas 2..7
+  lvl <- if (strat) 2 else 1
+  if (strat) H(1, paste0(sec, ". ", b$name, "  (n = ", b$n, ")"))
+  if (!is.null(b$t1)) {
+    H(lvl, if (strat) "Estadística descriptiva" else paste0(sec, ". Estadística descriptiva"))
+    ft <- tryCatch(table1::t1flex(b$t1), error = function(e) NULL)
+    if (!is.null(ft)) { ft <- flextable::fontsize(ft, size = 9, part = "all"); ft <- flextable::autofit(ft); flextable::flextable_to_rmd(ft) } else cat("*(tabla no disponible)*\n")
+    cat("\n")
+  }
+  if (length(b$checks)) {
+    if (!strat) sec <- sec + 1
+    H(lvl, if (strat) "Verificación de supuestos y decisión" else paste0(sec, ". Verificación de supuestos"))
+    for (ch in b$checks) { est <- if (is.na(ch$met)) "ℹ" else if (isTRUE(ch$met)) "✔" else "✘"; cat("- ", est, " **", ch$label, "** — ", ch$text, "\n", sep = "") }
+    if (!is.null(b$decision$reason)) cat("\n**Decisión:** ", b$decision$reason, " Prueba aplicada: **", b$analysis, "**.\n", sep = "")
+    cat("\n")
+  }
+  if (length(b$tables)) {
+    if (!strat) sec <- sec + 1
+    H(lvl, if (strat) paste0("Resultados — ", b$analysis) else paste0(sec, ". Resultados del análisis (", b$analysis, ")"))
+    if (!is.null(b$notes)) cat("*", b$notes, "*\n\n", sep = "")
+    for (nm in names(b$tables)) { cat("\n**", nm, "**\n\n", sep = ""); print(kb(b$tables[[nm]])); cat("\n") }
+  }
+  if (length(b$posthoc_tables)) {
+    if (!strat) sec <- sec + 1
+    H(lvl, if (strat) "Contrastes / post-hoc" else paste0(sec, ". Contrastes / post-hoc"))
+    for (nm in names(b$posthoc_tables)) { cat("\n**", nm, "**\n\n", sep = ""); print(kb(b$posthoc_tables[[nm]])); cat("\n") }
+  }
+  if (length(b$plots)) {
+    if (!strat) sec <- sec + 1
+    H(lvl, if (strat) "Figuras" else paste0(sec, ". Figuras"))
+    for (i in seq_along(b$plots)) {
+      lab <- if (!is.null(b$plot_labels) && i <= length(b$plot_labels)) b$plot_labels[[i]] else paste("Figura", i)
+      cat("\n**Figura ", i, ".** ", lab, if (strat) paste0(" — ", b$name) else "", "\n\n", sep = "")
+      tryCatch(draw(b$plots[[i]]), error = function(e) cat("*(no se pudo dibujar: ", conditionMessage(e), ")*\n", sep = ""))
+      cat("\n")
+    }
+  }
+  if (!strat) sec <- sec + 1
+  H(lvl, if (strat) "Cómo reportar el resultado" else paste0(sec, ". Cómo reportar el resultado"))
+  cat("> **Nota:** párrafo prellenado con los valores calculados, siguiendo los recuadros \"Cómo reportar\" del libro. Los textos entre corchetes **[ ]** son placeholders que el usuario debe sustituir por el contexto de sus datos.\n\n")
+  cat(b$report_md, "\n\n")
+}
+```
+
+---
+
+*Reporte generado automáticamente. Las decisiones metodológicas siguen las reglas descritas en el libro; la interpretación clínica es responsabilidad del usuario.*

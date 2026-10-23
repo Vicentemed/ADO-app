@@ -1,0 +1,11 @@
+/* CDO app — estilos mínimos */
+.cdo-checks { list-style: none; padding-left: 0; }
+.cdo-checks li { margin-bottom: 0.8rem; padding: 0.6rem 0.8rem; border-left: 4px solid #ddd; background: #fafafa; border-radius: 4px; }
+.cdo-ico { display: inline-block; width: 1.4em; font-weight: bold; }
+.cdo-ok  { color: #27AE60; }
+.cdo-bad { color: #E74C3C; }
+.cdo-info{ color: #2E86C1; }
+.cdo-report { background: #FDFDF5; border: 1px dashed #BBB; padding: 1rem; border-radius: 6px; line-height: 1.6; }
+table.Rtable1 { font-size: 0.85rem; }
+h6 { margin-top: 1rem; color: #2E86C1; }
+.small { font-size: 0.85rem; }
