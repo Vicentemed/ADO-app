@@ -1,5 +1,5 @@
 # =============================================================================
-# 01_registry.R — Registro genérico de análisis
+# 01_registry.R - Registro genérico de análisis
 # Cada análisis se DECLARA con ado_register(); la interfaz es genérica.
 #
 # Esquema de una entrada (spec):

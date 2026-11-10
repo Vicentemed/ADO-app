@@ -1,5 +1,5 @@
 # =============================================================================
-# 05_plots.R — Gráficos del libro con parámetros cosméticos (cos)
+# 05_plots.R - Gráficos del libro con parámetros cosméticos (cos)
 # Convención: cada builder devuelve un objeto ggplot, o una FUNCIÓN sin
 # argumentos que dibuja (para gráficos base como Q-Q, TukeyHSD, ROC).
 # =============================================================================
@@ -32,7 +32,7 @@ plot_box <- function(d, y, g, cos = list(), center = "mean") {
   .finish(p, cos, g, y)
 }
 
-# ---- Q-Q (car::qqPlot, estilo del libro) — función base -----------------------
+# ---- Q-Q (car::qqPlot, estilo del libro) - función base -----------------------
 plot_qq <- function(x, main = "Q-Q", cos = list()) {
   cos <- cos_merge(cos)
   x <- as.numeric(x); x <- x[!is.na(x)]
@@ -165,7 +165,7 @@ plot_km <- function(fit, d, cos = list(), pval = FALSE, risk_table = FALSE, lege
 plot_roc <- function(roc_obj, cos = list()) {
   cos <- cos_merge(cos)
   function() {
-    plot(roc_obj, col = cos$colour[1], lwd = 2, main = if (nzchar(cos$title)) cos$title else paste0("Curva ROC — AUC = ", round(as.numeric(pROC::auc(roc_obj)), 3)))
+    plot(roc_obj, col = cos$colour[1], lwd = 2, main = if (nzchar(cos$title)) cos$title else paste0("Curva ROC - AUC = ", round(as.numeric(pROC::auc(roc_obj)), 3)))
     abline(a = 0, b = 1, lty = 2, col = "gray50")
   }
 }
@@ -179,13 +179,13 @@ plot_diag <- function(model, which = c(1, 2, 3, 5)) {
 plot_tukey <- function(glht_obj, cos = list()) {
   cos <- cos_merge(cos)
   function() { op <- par(mar = c(4, 12, 3, 2)); on.exit(par(op))
-    plot(confint(glht_obj), col = cos$colour[1], main = if (nzchar(cos$title)) cos$title else "Tukey HSD — IC 95 %") }
+    plot(confint(glht_obj), col = cos$colour[1], main = if (nzchar(cos$title)) cos$title else "IC 95 % (comparaciones múltiples)") }
 }
 
 # ---- Medias ajustadas (effects) ----------------------------------------------------
 plot_adjusted <- function(eff, cos = list()) {
   cos <- cos_merge(cos)
-  function() plot(eff, main = if (nzchar(cos$title)) cos$title else "Medias ajustadas — ANCOVA",
+  function() plot(eff, main = if (nzchar(cos$title)) cos$title else "Medias ajustadas - ANCOVA",
                   lines = list(col = cos$colour[1]), symbols = list(col = cos$colour[1], pch = 16), confint = list(col = cos$colour[1]))
 }
 

@@ -1,5 +1,5 @@
 # =============================================================================
-# 06_report.R — Generación del reporte Word (rmarkdown → docx)
+# 06_report.R - Generación del reporte Word (rmarkdown → docx)
 # ctx: list(title, analysis, family, chapter, contexto, dataset, vars,
 #           t1 (table1), checks (list), decision (list), results_md, tables (list df),
 #           posthoc_tables (list df), plots (list ggplot/función), report_md, notes)

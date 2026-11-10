@@ -1,5 +1,5 @@
 # =============================================================================
-# 02_data.R — Carga de datos (datasets del libro + archivo propio) y variables
+# 02_data.R - Carga de datos (datasets del libro + archivo propio) y variables
 # =============================================================================
 
 # Llamada canónica del libro para leer los .txt

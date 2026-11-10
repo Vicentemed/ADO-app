@@ -1,6 +1,6 @@
 ---
 title: "`r params$ctx$title`"
-subtitle: "`r paste0(if (!is.null(params$ctx$subtitle)) paste0(params$ctx$subtitle, ' · ') else '', 'Generado con la app ADO — *Análisis de Datos en Odontología. Un enfoque pragmático con R*')`"
+subtitle: "`r paste0(if (!is.null(params$ctx$subtitle)) paste0(params$ctx$subtitle, ' · ') else '', 'Generado con la app ADO - *Análisis de Datos en Odontología. Un enfoque pragmático con R*')`"
 date: "`r format(Sys.Date(), '%d de %B de %Y')`"
 output:
   word_document:
@@ -57,13 +57,13 @@ for (b in blocks) {
   if (length(b$checks)) {
     if (!strat) sec <- sec + 1
     H(lvl, if (strat) "Verificación de supuestos y decisión" else paste0(sec, ". Verificación de supuestos"))
-    for (ch in b$checks) { est <- if (is.na(ch$met)) "ℹ" else if (isTRUE(ch$met)) "✔" else "✘"; cat("- ", est, " **", ch$label, "** — ", ch$text, "\n", sep = "") }
+    for (ch in b$checks) { est <- if (is.na(ch$met)) "informativo" else if (isTRUE(ch$met)) "se cumple" else "no se cumple"; cat("- **", ch$label, "** (", est, "): ", ch$text, "\n", sep = "") }
     if (!is.null(b$decision$reason)) cat("\n**Decisión:** ", b$decision$reason, " Prueba aplicada: **", b$analysis, "**.\n", sep = "")
     cat("\n")
   }
   if (length(b$tables)) {
     if (!strat) sec <- sec + 1
-    H(lvl, if (strat) paste0("Resultados — ", b$analysis) else paste0(sec, ". Resultados del análisis (", b$analysis, ")"))
+    H(lvl, if (strat) paste0("Resultados - ", b$analysis) else paste0(sec, ". Resultados del análisis (", b$analysis, ")"))
     if (!is.null(b$notes)) cat("*", b$notes, "*\n\n", sep = "")
     for (nm in names(b$tables)) { cat("\n**", nm, "**\n\n", sep = ""); print(kb(b$tables[[nm]])); cat("\n") }
   }
@@ -77,7 +77,7 @@ for (b in blocks) {
     H(lvl, if (strat) "Figuras" else paste0(sec, ". Figuras"))
     for (i in seq_along(b$plots)) {
       lab <- if (!is.null(b$plot_labels) && i <= length(b$plot_labels)) b$plot_labels[[i]] else paste("Figura", i)
-      cat("\n**Figura ", i, ".** ", lab, if (strat) paste0(" — ", b$name) else "", "\n\n", sep = "")
+      cat("\n**Figura ", i, ".** ", lab, if (strat) paste0(" - ", b$name) else "", "\n\n", sep = "")
       tryCatch(draw(b$plots[[i]]), error = function(e) cat("*(no se pudo dibujar: ", conditionMessage(e), ")*\n", sep = ""))
       cat("\n")
     }

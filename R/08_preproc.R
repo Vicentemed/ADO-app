@@ -1,5 +1,5 @@
 # =============================================================================
-# 08_preproc.R — Preprocesamiento de datos (paso 2 del flujo)
+# 08_preproc.R - Preprocesamiento de datos (paso 2 del flujo)
 #   · Evaluar / eliminar valores faltantes (NA)
 #   · Remover variables
 #   · Subset de filas (filtro por variable o expresión R)
@@ -171,7 +171,7 @@ preproc_server <- function(input, output, session, d_raw) {
     mod <- length(lg()) > 0
     tags$div(class = if (mod) "alert alert-info py-2 small" else "alert alert-light py-2 small",
              tags$b(nrow(d)), " filas × ", tags$b(ncol(d)), " columnas",
-             if (mod) tags$span(" (original: ", nrow(r), " × ", ncol(r), ") — ", tags$b(length(lg())), " operación(es) aplicada(s)") else " — sin modificaciones.",
+             if (mod) tags$span(" (original: ", nrow(r), " × ", ncol(r), ") - ", tags$b(length(lg())), " operación(es) aplicada(s)") else " - sin modificaciones.",
              tags$br(), "Total de NA: ", tags$b(sum(is.na(d)))) })
   output$pp_na_table <- renderDT({ d <- wd(); req(d); datatable(na_summary(d), rownames = FALSE, options = list(dom = "t", paging = FALSE, scrollY = "220px", scrollX = TRUE), class = "compact stripe") })
   output$pp_log <- renderUI({ l <- lg(); if (!length(l)) return(tags$p(class = "text-muted small", "Ninguna operación aplicada.")); tags$ol(class = "small", lapply(l, tags$li)) })

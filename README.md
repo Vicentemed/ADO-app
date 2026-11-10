@@ -41,24 +41,27 @@ Cada análisis está vinculado al capítulo del libro donde se explica con un co
 | **Comparación de medias** | Prueba t independiente | Wilcoxon suma de rangos (Mann-Whitney) |
 | | Prueba t apareada | Wilcoxon de rangos con signo |
 | | ANOVA de una vía | Kruskal-Wallis |
-| | ANOVA de medidas repetidas | ANOVA de Friedman |
-| | ANOVA factorial (dos factores) | — |
-| | ANCOVA (grupo + covariable) | — |
+| | ANOVA de medidas repetidas (ezANOVA con corrección GG/HF, o modelo multinivel `lme()` con razón de verosimilitud) | ANOVA de Friedman |
+| | Curvas de crecimiento por grupo (`drc`, razón de verosimilitud) | - |
+| | ANOVA factorial (dos factores) | - |
+| | ANCOVA (grupo + covariable) | - |
 | **Correlación** | Correlación de Pearson | Correlación de Spearman |
-| | Tau de Kendall | — |
-| | Correlación parcial (controlando Z) | — |
-| | Predictive Power Score (PPS) | — |
+| | Tau de Kendall | - |
+| | Correlación parcial (controlando Z) | - |
+| | Predictive Power Score (PPS) | - |
 | **Datos categóricos** | Chi-cuadrado de Pearson | Prueba exacta de Fisher |
-| | Prueba de McNemar (apareada) | — |
-| **Concordancia** | Kappa de Cohen (ponderado si ordinal; Fleiss con > 2 evaluadores) | — |
-| | Coeficiente de correlación intraclase (ICC) | — |
+| | Prueba de McNemar (apareada) | - |
+| **Concordancia** | Kappa de Cohen (ponderado si ordinal; Fleiss con > 2 evaluadores) | - |
+| | Coeficiente de correlación intraclase (ICC) | - |
 | | Bland-Altman | Coeficiente de concordancia de Lin (CCC) |
-| **Regresión** | Regresión lineal múltiple | — |
-| | Regresión logística | — |
-| **Supervivencia** | Kaplan-Meier y prueba log-rank | — |
-| | Regresión de Cox | — |
+| **Regresión** | Regresión lineal múltiple | - |
+| | Regresión logística | - |
+| **Supervivencia** | Kaplan-Meier y prueba log-rank | - |
+| | Regresión de Cox | - |
 
-Los post-hoc incluyen Tukey, Dunnett, Bonferroni y Benjamini-Hochberg según el análisis.
+Los post-hoc y contrastes se eligen en el paso 6, según el análisis: Tukey, Dunnett (con grupo control a elección), Bonferroni, Holm, Benjamini-Hochberg, Games-Howell, contrastes ortogonales o personalizados y análisis de tendencia en el ANOVA de una vía; Siegel y Castellan o Wilcoxon por pares en Kruskal-Wallis; `friedmanmc` en Friedman; residuos estandarizados ajustados en tablas mayores de 2×2.
+
+Las reglas de decisión siguen el libro: la normalidad se evalúa con Shapiro-Wilk y, con n > 50, con el sesgo y la curtosis estandarizados; chi-cuadrado frente a Fisher se decide solo por las frecuencias esperadas (alguna < 5 → Fisher); en medidas repetidas la ruta depende de la prueba de Mauchly.
 
 ## Flujo de uso
 
@@ -87,10 +90,16 @@ install.packages(c(
   "rmarkdown", "knitr", "flextable", "table1", "readxl",
   # Análisis
   "car", "multcomp", "ez", "effects", "pgirmess", "psych", "pastecs", "pwr",
-  "irr", "epiR", "ggm", "ppsr", "pROC", "ResourceSelection",
+  "irr", "irrCAC", "epiR", "ggm", "ppsr", "pROC", "ResourceSelection",
+  "nlme", "drc", "gam", "leaps", "caret", "lsr", "rms", "qcc", "dcurves",
   "survival", "survminer"
 ))
+
+# ggm necesita el paquete graph de Bioconductor
+install.packages("BiocManager"); BiocManager::install("graph")
 ```
+
+
 
 ## Ejecución
 
@@ -113,6 +122,7 @@ Los scripts de `tests/` se ejecutan desde la carpeta del proyecto con `Rscript`:
 | Script | Qué hace |
 |---|---|
 | `tests/smoke_test.R` | Ejecuta **cada análisis registrado** sobre su ejemplo del libro: descriptiva, supuestos, análisis, post-hoc, gráficos y texto de reporte. |
+| `tests/verificacion_libro/run_all.R` | Corre todos los análisis sobre los ejemplos del libro y compara cada cifra con la impresa en el libro; escribe `resultados.csv`. Requiere el texto del libro en esa carpeta (no se incluye en el repositorio). |
 | `tests/test_preproc.R` | Prueba las utilidades de preprocesamiento sin Shiny. |
 | `tests/make_example_report.R` | Genera un reporte Word de ejemplo (ANOVA de una vía) en `report/`. |
 | `tests/make_preproc_report.R` | Genera un reporte Word con historial de preprocesamiento. |

@@ -1,5 +1,5 @@
 # =============================================================================
-# 00_config.R — Configuración global de la app ADO
+# 00_config.R - Configuración global de la app ADO
 # (Análisis de Datos en Odontología. Un enfoque pragmático con R)
 # Estilo: R base, como en el libro.
 # =============================================================================

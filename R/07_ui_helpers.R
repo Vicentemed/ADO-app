@@ -1,5 +1,5 @@
 # =============================================================================
-# 07_ui_helpers.R — Constructores de UI genéricos sobre el registro
+# 07_ui_helpers.R - Constructores de UI genéricos sobre el registro
 # =============================================================================
 library(shiny)
 
@@ -10,8 +10,10 @@ role_input_ui <- function(prefix, spec, d, preset = list()) {
     r <- spec$roles[[rn]]; ch <- vars_for_role(d, r); sel <- preset[[rn]]
     sel <- sel[sel %in% ch]
     if (!isTRUE(r$required) && !isTRUE(r$multiple)) ch <- c("(ninguna)" = "", ch)
-    selectInput(paste0(prefix, "_", rn), label = tags$span(r$label, if (isTRUE(r$required)) tags$span(" *", style = "color:#E74C3C")),
-                choices = ch, selected = if (length(sel)) sel else if (isTRUE(r$multiple)) NULL else ch[1], multiple = isTRUE(r$multiple), width = "100%")
+    tagList(
+      selectInput(paste0(prefix, "_", rn), label = tags$span(r$label, if (isTRUE(r$required)) tags$span(" *", style = "color:#E74C3C")),
+                  choices = ch, selected = if (length(sel)) sel else if (isTRUE(r$multiple)) NULL else ch[1], multiple = isTRUE(r$multiple), width = "100%"),
+      if (!is.null(r$help)) helpText(r$help))
   }))
 }
 read_roles <- function(input, prefix, spec) {

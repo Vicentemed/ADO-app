@@ -1,5 +1,5 @@
 # =============================================================================
-# 04_descriptives.R — Estadística descriptiva con table1 (como en el libro)
+# 04_descriptives.R - Estadística descriptiva con table1 (como en el libro)
 # Patrón del libro: table1(~ respuesta | factor, data = dat)
 # =============================================================================
 
@@ -19,7 +19,7 @@ table1_html <- function(t1) {
   htmltools::HTML(paste(unclass(t1), collapse = ""))
 }
 
-# Resumen numérico por grupo (n, media, DE, EE, mediana, IQR) — R base
+# Resumen numérico por grupo (n, media, DE, EE, mediana, IQR) - R base
 desc_numeric <- function(y, g = NULL) {
   y <- as.numeric(y)
   if (is.null(g)) g <- factor(rep("Total", length(y)))

@@ -1,130 +1,274 @@
 # =============================================================================
-# analyses/correlacion.R — Pearson (alt: Spearman/Kendall), parcial, PPS
-# Reglas del libro (cap. Correlaciones): Pearson requiere normalidad de ambas
-# variables (Q-Q/Shapiro); si no → Spearman; con muchos empates/ordinal → Kendall.
+# analyses/correlacion.R - Pearson (alt: Spearman), Kendall, parcial, PPS
+# Reglas del libro (cap. 10 Correlaciones):
+#  - Pearson requiere datos continuos, normalidad de ambas variables y relación
+#    lineal (10.2.1). La normalidad se evalúa con el gráfico Q-Q de car::qqPlot():
+#    puntos dentro de la banda de confianza al 95 % → se aproximan a la normal
+#    (Fig. 10.2); puntos fuera de la banda → no normal → Spearman (Fig. 10.4).
+#  - Spearman: alternativa no paramétrica (variables no normales u ordinales);
+#    no da IC directamente (sería necesario bootstrap) (10.3).
+#  - Kendall: datos ordinales con pocos valores posibles / muchos empates; el
+#    libro la presenta junto a Spearman como comparación (10.4).
+#  - Parcial: ggm::pcor() sobre var(); se muestran la bivariada y la relación de
+#    Z con X e Y (10.5).
+#  - PPS: ppsr::score() / visualize_pps() (10.6).
 # =============================================================================
 
-efecto_cor <- function(r) { r <- abs(r); if (is.na(r)) "…" else if (r < 0.1) "trivial" else if (r < 0.3) "pequeño" else if (r < 0.5) "mediano" else "grande" }
+# ---- Banda Q-Q (idéntica a car::qqPlot: línea por cuartiles, banda al 95 %) ----
+# El libro decide visualmente. Para automatizar esa lectura la app cuenta los
+# puntos fuera de la banda; con una banda puntual al 95 % se espera que ~5 % de
+# los puntos caigan fuera por azar, de modo que «≤ 5 % fuera» se toma como
+# «los puntos permanecen dentro de la banda». Con este criterio se reproducen
+# las dos decisiones del libro (IMC/Tqx → normal; edad dental/cronológica → no).
+.qq_band_check <- function(x, label) {
+  x <- sort(as.numeric(x)[!is.na(x)]); n <- length(x)
+  if (n < 3) return(check_obj("normalidad", paste0("Normalidad - Q-Q (", label, ")"), NA,
+                              paste0("No es posible construir el gráfico Q-Q de ", label, " (n = ", n, ").")))
+  P <- ppoints(n); z <- qnorm(P)
+  Qx <- quantile(x, c(0.25, 0.75), names = FALSE); Qz <- qnorm(c(0.25, 0.75))
+  b <- (Qx[2] - Qx[1]) / (Qz[2] - Qz[1]); a <- Qx[1] - b * Qz[1]
+  SE <- (b / dnorm(z)) * sqrt(P * (1 - P) / n); fit <- a + b * z
+  out <- sum(x > fit + qnorm(0.975) * SE | x < fit - qnorm(0.975) * SE)
+  pct <- 100 * out / n; met <- if (b <= 0) FALSE else pct <= 5
+  txt <- paste0("Gráfico Q-Q de ", label, " (car::qqPlot, banda de confianza al 95 %): ", out, " de ", n, " puntos (",
+                fmt_num(pct, 1), " %) quedan fuera de la banda. ",
+                if (met) "Los puntos permanecen dentro de la banda: la variable se aproxima a la distribución normal."
+                else "Hay puntos fuera de la banda de confianza: la variable se aparta de la distribución normal.",
+                " (Criterio operativo de la app para la lectura visual del libro: ≤ 5 % de puntos fuera de la banda; confírmelo en el gráfico Q-Q.)")
+  check_obj("normalidad", paste0("Normalidad - Q-Q (", label, ")"), met, txt, out = out, n = n, pct_out = pct)
+}
+
+# Magnitud según los criterios de Cohen del libro (0.10 pequeño, 0.30 mediano, ≥ 0.50 grande);
+# por debajo de 0.10 el libro escribe «sumamente pequeña» (r = 0.028).
+.mag_cor <- function(r) { r <- abs(r); if (is.na(r)) "…" else if (r < 0.1) "sumamente pequeña" else if (r < 0.3) "pequeña" else if (r < 0.5) "mediana" else "grande" }
+.dir_txt <- function(est, x, y) if (est > 0) paste0("a mayor ", x, ", mayor ", y) else paste0("a mayor ", x, ", menor ", y)
+
+.cor_dd <- function(d, v) { dd <- data.frame(x = num(d, v$x), y = num(d, v$y)); dd[complete.cases(dd), ] }
 
 .cor_run <- function(d, v, method) {
-  dd <- data.frame(x = num(d, v$x), y = num(d, v$y)); dd <- dd[complete.cases(dd), ]
+  dd <- .cor_dd(d, v)
   ct <- suppressWarnings(cor.test(dd$x, dd$y, alternative = "two.sided", method = method))
-  est <- unname(ct$estimate); ci <- if (!is.null(ct$conf.int)) ct$conf.int else c(NA, NA)
-  sym <- switch(method, pearson = "r", spearman = "ρ", kendall = "τ")
-  list(main = ct,
-       stats = list(est = est, p = ct$p.value, lo = ci[1], hi = ci[2], n = nrow(dd), sym = sym, r2 = if (method == "pearson") est^2 else NA,
-                    stat = unname(ct$statistic), df = if (!is.null(ct$parameter)) unname(ct$parameter) else NA),
-       tables = list("Resultado de cor.test()" = data.frame(Coeficiente = sym, Estimación = est, `IC 95% inf` = ci[1], `IC 95% sup` = ci[2], p = ct$p.value, n = nrow(dd), check.names = FALSE)),
-       notes = if (method == "pearson") "R² = r² indica la proporción de varianza compartida." else "Spearman/Kendall no proporcionan IC directamente (el libro sugiere bootstrap).")
+  est <- unname(ct$estimate); n <- nrow(dd)
+  if (method == "pearson") {
+    ci <- ct$conf.int
+    list(main = ct,
+         stats = list(est = est, p = ct$p.value, lo = ci[1], hi = ci[2], n = n, sym = "r", r2 = est^2,
+                      stat = unname(ct$statistic), df = unname(ct$parameter)),
+         tables = list("Resultado de cor.test(method = \"pearson\")" = data.frame(
+           t = unname(ct$statistic), gl = unname(ct$parameter), p = ct$p.value, `IC 95% inf` = ci[1], `IC 95% sup` = ci[2],
+           r = est, `R²` = est^2, n = n, check.names = FALSE)),
+         notes = "R² = r² indica la proporción de varianza de una variable explicada por la otra.")
+  } else {  # spearman
+    list(main = ct,
+         stats = list(est = est, p = ct$p.value, lo = NA, hi = NA, n = n, sym = "ρ", r2 = NA, stat = unname(ct$statistic), df = NA),
+         tables = list("Resultado de cor.test(method = \"spearman\")" = data.frame(S = unname(ct$statistic), p = ct$p.value, rho = est, n = n, check.names = FALSE)),
+         notes = "En Spearman no se obtienen intervalos de confianza directamente; para calcularlos sería necesario usar métodos bootstrap.")
+  }
 }
+
+# Frase de supuestos a partir de los chequeos Q-Q (los dos primeros: X e Y)
+.qq_sentence <- function(checks, v) {
+  qx <- checks[[1]]; qy <- checks[[2]]
+  both <- isTRUE(qx$met) && isTRUE(qy$met)
+  paste0("La normalidad de ", CTX(v$x), " y de ", CTX(v$y), " se evaluó mediante gráficos Q-Q con banda de confianza al 95 % (",
+         v$x, ": ", qx$out %||% "…", " de ", qx$n %||% "…", " puntos fuera de la banda; ", v$y, ": ", qy$out %||% "…", " de ", qy$n %||% "…", "); ",
+         if (both) "ambas variables se aproximan a la distribución normal"
+         else "al menos una variable se aparta de la normalidad (puntos fuera de la banda de confianza)")
+}
+
 .cor_report <- function(res, d, v, checks, method) {
-  s <- res$stats; nm <- c(pearson = "Pearson", spearman = "Spearman", kendall = "Kendall")[method]
-  swx <- checks[[1]]; swy <- checks[[2]]
-  paste0("La normalidad de ", CTX(v$x), " (Shapiro-Wilk, ", .sw_txt(swx), ") y de ", CTX(v$y), " (", .sw_txt(swy), ") se evaluó junto con el gráfico Q-Q",
-         if (isTRUE(swx$met) && isTRUE(swy$met)) ", sin evidencia de desviación de la normalidad" else ", con evidencia de desviación de la normalidad en al menos una variable",
-         "; por ello se aplicó la correlación de ", nm, ". La relación entre ", CTX(v$x), " y ", CTX(v$y), " fue ",
-         if (s$est > 0) "positiva" else "negativa", " y ", if (s$p < ALPHA) "estadísticamente significativa" else "no significativa",
-         " (", s$sym, " = ", fmt_num(s$est, 3), if (!is.na(s$lo)) paste0(", IC 95 %: ", fmt_num(s$lo, 3), " a ", fmt_num(s$hi, 3)) else "", ", p ", fmt_p(s$p), ", n = ", s$n, "), un efecto ", efecto_cor(s$est),
-         if (!is.na(s$r2)) paste0("; R² = ", fmt_num(s$r2, 3), " (", round(100 * s$r2), " % de varianza compartida)") else "", " [Cohen, 1988; Field, 2012].")
+  s <- res$stats; sig <- s$p < ALPHA
+  pos <- if (s$est > 0) "positiva" else "negativa"
+  both <- length(checks) >= 2 && isTRUE(checks[[1]]$met) && isTRUE(checks[[2]]$met)
+  intro <- if (length(checks) >= 2 && !is.null(checks[[1]]$out)) paste0(.qq_sentence(checks, v), "; ") else ""
+  if (method == "pearson") {
+    paste0(intro, "por ello se aplicó la correlación de Pearson. ",
+           if (sig) paste0("La salida muestra una relación ", .mag_cor(s$est), ", ", pos, " y significativa (r = ", fmt_num(s$est, 2), ", p ", fmt_p(s$p),
+                           ", n = ", s$n, ") entre ", CTX(v$x), " y ", CTX(v$y), " (", .dir_txt(s$est, v$x, v$y), "), con un intervalo de confianza al 95 % (",
+                           fmt_num(s$lo, 3), " a ", fmt_num(s$hi, 3), ") que ", if (s$lo > 0 || s$hi < 0) "no incluye" else "incluye", " el cero.")
+           else paste0("La salida indica una correlación ", .mag_cor(s$est), " y no significativa (r = ", fmt_num(s$est, 3), ", p ", fmt_p(s$p),
+                       ", n = ", s$n, "; IC 95 %: ", fmt_num(s$lo, 3), " a ", fmt_num(s$hi, 3), ") entre ", CTX(v$x), " y ", CTX(v$y),
+                       ". Dado que p > 0.05, no se puede rechazar la hipótesis nula de que no existe relación entre ambas variables."),
+           " El coeficiente de determinación es R² = ", fmt_num(s$r2, 3), ": el ", fmt_num(100 * s$r2, 1), " % de la variación de ", CTX(v$y),
+           " es explicada por ", CTX(v$x), " [Cohen, 1988; Field et al., 2012].")
+  } else {
+    paste0(intro, if (both) "se aplicó la correlación de Spearman, alternativa no paramétrica de Pearson también indicada cuando las variables son ordinales. "
+                  else "por ello se aplicó la correlación de Spearman, alternativa no paramétrica de Pearson. ",
+           if (sig) paste0("La salida indica una relación ", pos, " ", .mag_cor(s$est), " y significativa (ρ = ", fmt_num(s$est, 3), ", p ", fmt_p(s$p),
+                           ", n = ", s$n, ") entre ", CTX(v$x), " y ", CTX(v$y), ": ", .dir_txt(s$est, v$x, v$y), ".")
+           else paste0("La salida indica una relación ", .mag_cor(s$est), " y no significativa (ρ = ", fmt_num(s$est, 3), ", p ", fmt_p(s$p),
+                       ", n = ", s$n, ") entre ", CTX(v$x), " y ", CTX(v$y), ". Dado que p > 0.05, no se puede rechazar la hipótesis nula de que no existe relación entre ambas variables."),
+           " En Spearman no se obtienen intervalos de confianza directamente; para calcularlos sería necesario usar métodos bootstrap [Field et al., 2012].")
+  }
 }
+
 .cor_roles <- list(x = role("Variable X (numérica)", "numeric"), y = role("Variable Y (numérica)", "numeric"))
-.cor_assump <- function(d, v) list(check_normality(num(d, v$x), v$x), check_normality(num(d, v$y), v$y))
-.cor_plots <- function(jit) list(
-  scatter = list(label = "Dispersión + recta de regresión", fn = function(d, v, res, cos) plot_scatter(d, v$x, v$y, cos, r_label = paste0(res$stats$sym, " = ", fmt_num(res$stats$est, 2)), jitter = jit)),
+# Supuestos de Pearson (10.2.1): continuos, normalidad (Q-Q) y relación lineal
+.cor_assump <- function(d, v) list(
+  .qq_band_check(num(d, v$x), v$x), .qq_band_check(num(d, v$y), v$y),
+  check_obj("info", "Datos continuos y relación lineal", NA,
+            "Pearson requiere además datos continuos (escala de intervalo o razón) en ambas variables y una relación lineal entre ellas: verifíquelo en el diagrama de dispersión."))
+
+.scatter_plot <- function(d, v, res, cos) {
+  plot_scatter(d, v$x, v$y, cos, r_label = paste0(res$stats$sym, " = ", fmt_num(res$stats$est, 2)), jitter = isTRUE(cos_merge(cos)$jitter))
+}
+.cor_plots <- list(
+  scatter = list(label = "Dispersión (jitter) + recta de regresión", fn = .scatter_plot),
   qqx = list(label = "Q-Q de X", fn = function(d, v, res, cos) plot_qq(num(d, v$x), paste("Q-Q:", v$x), cos)),
   qqy = list(label = "Q-Q de Y", fn = function(d, v, res, cos) plot_qq(num(d, v$y), paste("Q-Q:", v$y), cos)))
 
 ado_register(list(
   id = "pearson", family = "correlacion", order = 1, label = "Correlación de Pearson",
-  description = "Relación lineal entre dos variables numéricas normales. Alternativa: Spearman.",
+  description = "Relación lineal entre dos variables numéricas continuas y normales (Q-Q). Alternativa: Spearman.",
   chapter = "Correlaciones", roles = .cor_roles,
   example = list(file = "DXKTw.txt", vars = list(x = "Imc", y = "Tqx"), note = "IMC y tiempo quirúrgico (min)."),
   alternative = "spearman",
   descriptives = function(d, v) desc_table1(d, c(v$x, v$y)),
-  assumptions = function(d, v) { ch <- .cor_assump(d, v); list(checks = ch, decision = decide_path(ch, TRUE)) },
-  run = function(d, v, opts) .cor_run(d, v, "pearson"), posthoc = NULL, plots = .cor_plots(FALSE),
+  assumptions = function(d, v) {
+    ch <- .cor_assump(d, v); dec <- decide_path(ch, TRUE)
+    dec$reason <- if (dec$all_met) "Los gráficos Q-Q muestran que ambas variables se aproximan a la distribución normal (puntos dentro de la banda de confianza al 95 %): se aplica la correlación de Pearson."
+                  else "En el gráfico Q-Q, al menos una variable se aparta de la normalidad (puntos fuera de la banda de confianza al 95 %): según el libro, se aplica la correlación de Spearman."
+    list(checks = ch, decision = dec) },
+  run = function(d, v, opts) .cor_run(d, v, "pearson"), posthoc = NULL, plots = .cor_plots,
   report = function(res, d, v, checks) .cor_report(res, d, v, checks, "pearson")
 ))
 ado_register(list(
   id = "spearman", family = "correlacion", order = 2, label = "Correlación de Spearman (ρ)",
-  description = "Alternativa no paramétrica de Pearson: variables no normales u ordinales.",
+  description = "Alternativa no paramétrica de Pearson: una o ambas variables no normales, o variables ordinales.",
   chapter = "Correlaciones", roles = .cor_roles,
   example = list(file = "datcron.txt", vars = list(x = "Dental_Age", y = "Cron_Age"), note = "Edad dental y cronológica (meses)."),
   alternative = NULL,
   descriptives = function(d, v) desc_table1(d, c(v$x, v$y)),
-  assumptions = function(d, v) { ch <- .cor_assump(d, v); list(checks = ch, decision = list(parametric = FALSE, all_met = FALSE, violated = character(0), reason = "No paramétrica.")) },
-  run = function(d, v, opts) .cor_run(d, v, "spearman"), posthoc = NULL, plots = .cor_plots(TRUE),
+  assumptions = function(d, v) { ch <- .cor_assump(d, v)[1:2]
+    list(checks = ch, decision = list(parametric = FALSE, all_met = FALSE, violated = character(0),
+                                      reason = "Spearman: alternativa no paramétrica de Pearson cuando una o ambas variables no cumplen la normalidad (Q-Q) o son ordinales.")) },
+  run = function(d, v, opts) .cor_run(d, v, "spearman"), posthoc = NULL, plots = .cor_plots,
   report = function(res, d, v, checks) .cor_report(res, d, v, checks, "spearman")
 ))
+
+# ---- Kendall: τ junto a ρ de Spearman (comparativa), como en el libro ----------
+.ties_check <- function(x, label) {
+  x <- as.numeric(x); x <- x[!is.na(x)]; n <- length(x); k <- length(unique(x))
+  check_obj("info", paste0("Valores distintos y empates (", label, ")"), NA,
+            paste0(label, " toma ", k, " valores distintos en ", n, " observaciones (", n - k, " observaciones repiten un valor ya presente, ",
+                   fmt_num(100 * (n - k) / max(n, 1), 1), " %)."), k = k, n = n)
+}
 ado_register(list(
   id = "kendall", family = "correlacion", order = 3, label = "Tau de Kendall (τ)",
-  description = "Recomendada con datos ordinales de pocos niveles o muchos empates.",
+  description = "Recomendada con rangos de muy pocos valores posibles (ordinales con pocas categorías, muchos empates). Se muestra junto a Spearman.",
   chapter = "Correlaciones", roles = .cor_roles,
   example = list(file = "datcron.txt", vars = list(x = "Cron_Age", y = "Bone_Maturation"), note = "Edad cronológica y maduración ósea (ordinal 1-5)."),
   alternative = NULL,
   descriptives = function(d, v) desc_table1(d, c(v$x, v$y)),
-  assumptions = function(d, v) { ch <- .cor_assump(d, v); list(checks = ch, decision = list(parametric = FALSE, all_met = FALSE, violated = character(0), reason = "No paramétrica.")) },
-  run = function(d, v, opts) .cor_run(d, v, "kendall"), posthoc = NULL, plots = .cor_plots(TRUE),
-  report = function(res, d, v, checks) .cor_report(res, d, v, checks, "kendall")
+  assumptions = function(d, v) list(checks = list(.ties_check(num(d, v$x), v$x), .ties_check(num(d, v$y), v$y)),
+                                    decision = list(parametric = FALSE, all_met = FALSE, violated = character(0),
+                                                    reason = "Según el libro, Kendall se recomienda cuando los datos son rangos con muy pocos valores posibles (muchos empates), p. ej. ordinales con pocas categorías; si hay pocos empates, use Spearman.")),
+  run = function(d, v, opts) {
+    dd <- .cor_dd(d, v)
+    kt <- suppressWarnings(cor.test(dd$x, dd$y, alternative = "two.sided", method = "kendall"))
+    sp <- suppressWarnings(cor.test(dd$x, dd$y, alternative = "two.sided", method = "spearman"))
+    list(main = kt,
+         stats = list(tau = unname(kt$estimate), p = kt$p.value, rho = unname(sp$estimate), p_rho = sp$p.value, n = nrow(dd),
+                      k_x = length(unique(dd$x)), k_y = length(unique(dd$y))),
+         tables = list("Kendall y Spearman (comparativa)" = data.frame(
+           Coeficiente = c("Kendall τ", "Spearman ρ"), Estimación = c(unname(kt$estimate), unname(sp$estimate)),
+           p = c(kt$p.value, sp$p.value), n = nrow(dd), check.names = FALSE)),
+         notes = "Como en el libro, la rho de Spearman se calcula como comparativa de la tau de Kendall.")
+  },
+  posthoc = NULL,
+  plots = list(scatter = list(label = "Dispersión (jitter) con τ y ρ", fn = function(d, v, res, cos) {
+    cos <- cos_merge(cos); dd <- .cor_dd(d, v); s <- res$stats
+    p <- ggplot(dd, aes(x, y)) +
+      geom_jitter(height = 0.15, alpha = 0.3, colour = cos$colour[1], size = 1.5) +
+      geom_smooth(method = "lm", se = cos$show_ci, colour = cos$colour[2], alpha = 0.15, formula = y ~ x) +
+      annotate("text", x = min(dd$x) + 0.05 * diff(range(dd$x)), y = max(dd$y) - 0.1 * diff(range(dd$y)),
+               label = paste0("Kendall τ = ", round(s$tau, 2), "\nSpearman ρ = ", round(s$rho, 2)), hjust = 0, size = 3.5, colour = "#333333")
+    if (s$k_y <= 10 && all(dd$y == round(dd$y))) p <- p + scale_y_continuous(breaks = sort(unique(dd$y)))
+    .finish(p, cos, v$x, v$y) })),
+  report = function(res, d, v, checks) {
+    s <- res$stats; sig <- s$p < ALPHA
+    few <- if (s$k_y <= s$k_x) list(var = v$y, k = s$k_y) else list(var = v$x, k = s$k_x)
+    paste0("Dado que ", CTX(few$var), " toma solo ", few$k, " valores distintos y, por tanto, presenta numerosos empates, se aplicó la tau de Kendall, más apropiada que la rho de Spearman en esta situación. ",
+           "La relación entre ", CTX(v$x), " y ", CTX(v$y), " fue ", if (s$tau > 0) "positiva" else "negativa", " y ", if (sig) "significativa" else "no significativa",
+           " (τ = ", fmt_num(s$tau, 3), ", p ", fmt_p(s$p), ", n = ", s$n, "); a modo comparativo, la rho de Spearman fue ρ = ", fmt_num(s$rho, 3), " (p ", fmt_p(s$p_rho), "). ",
+           if (abs(s$tau) < abs(s$rho)) "La tau de Kendall es más conservadora que la rho de Spearman, lo cual es esperable: Kendall es más robusta ante empates y generalmente produce estimaciones más conservadoras" else "Kendall es más robusta ante empates",
+           " [Field et al., 2012].")
+  }
 ))
 
 ado_register(list(
   id = "parcial", family = "correlacion", order = 4, label = "Correlación parcial (controlando Z)",
-  description = "Correlación entre X e Y eliminando la influencia de una tercera variable Z (ggm::pcor).",
+  description = "Correlación entre X e Y controlando el efecto de una tercera variable Z, posible variable de confusión (ggm::pcor).",
   chapter = "Correlaciones",
   roles = list(x = role("Variable X", "numeric"), y = role("Variable Y", "numeric"), z = role("Variable de control Z", "numeric")),
   example = list(file = "DXKTw.txt", vars = list(x = "Tqx", y = "Imc", z = "Ed"), note = "Tiempo quirúrgico e IMC controlando por edad."),
   alternative = NULL,
   descriptives = function(d, v) desc_table1(d, c(v$x, v$y, v$z)),
-  assumptions = function(d, v) { ch <- .cor_assump(d, v); list(checks = ch, decision = decide_path(ch, FALSE)) },
+  assumptions = function(d, v) {
+    ch <- list(check_obj("info", "Base de la correlación parcial", NA,
+                         "pcor() (ggm) calcula la correlación parcial a partir de la matriz de covarianzas var(); se apoya en correlaciones de Pearson (véanse sus supuestos)."))
+    list(checks = ch, decision = list(parametric = TRUE, all_met = NA, violated = character(0),
+                                      reason = "Se calcula la correlación bivariada sin ajuste, la correlación parcial controlando Z y la relación de Z con X y con Y.")) },
   run = function(d, v, opts) {
     dd <- data.frame(x = num(d, v$x), y = num(d, v$y), z = num(d, v$z)); dd <- dd[complete.cases(dd), ]
     S <- var(dd); rp <- ggm::pcor(c("x", "y", "z"), S)
-    biv <- cor.test(dd$x, dd$y); c1 <- cor.test(dd$x, dd$z); c2 <- cor.test(dd$y, dd$z)
-    n <- nrow(dd); tval <- rp * sqrt((n - 3) / (1 - rp^2)); p_partial <- 2 * pt(-abs(tval), n - 3)
+    biv <- cor.test(dd$x, dd$y, alternative = "two.sided", method = "pearson")
+    c1 <- cor.test(dd$x, dd$z, method = "pearson"); c2 <- cor.test(dd$y, dd$z, method = "pearson")
     list(main = rp,
-         stats = list(r_partial = rp, p_partial = p_partial, r_biv = unname(biv$estimate), p_biv = biv$p.value, r_xz = unname(c1$estimate), r_yz = unname(c2$estimate), n = n),
-         tables = list("Correlaciones" = data.frame(Relación = c(paste(v$x, "~", v$y, "(bivariada)"), paste(v$x, "~", v$y, "| ", v$z, "(parcial)"), paste(v$x, "~", v$z), paste(v$y, "~", v$z)),
-                                                    r = c(unname(biv$estimate), rp, unname(c1$estimate), unname(c2$estimate)), p = c(biv$p.value, p_partial, c1$p.value, c2$p.value))),
-         notes = "pcor() no proporciona IC; el p de la parcial se obtiene con t = r·√((n−3)/(1−r²)).")
+         stats = list(r_partial = rp, r_biv = unname(biv$estimate), p_biv = biv$p.value, r_xz = unname(c1$estimate), p_xz = c1$p.value,
+                      r_yz = unname(c2$estimate), p_yz = c2$p.value, n = nrow(dd)),
+         tables = list("Correlaciones" = data.frame(
+           Relación = c(paste(v$x, "~", v$y, "(bivariada, sin ajuste)"), paste0(v$x, " ~ ", v$y, " | ", v$z, " (parcial)"), paste(v$x, "~", v$z), paste(v$y, "~", v$z)),
+           r = c(unname(biv$estimate), rp, unname(c1$estimate), unname(c2$estimate)),
+           p = c(biv$p.value, NA, c1$p.value, c2$p.value), check.names = FALSE)),
+         notes = "Como en el libro, pcor() se reporta sin valor p ni IC; los valores p corresponden a cor.test() de Pearson.")
   },
   posthoc = NULL,
-  plots = list(scatter = list(label = "Dispersión X-Y", fn = function(d, v, res, cos) plot_scatter(d, v$x, v$y, cos, r_label = paste0("r parcial = ", fmt_num(res$stats$r_partial, 2))))),
+  plots = list(),
   report = function(res, d, v, checks) {
     s <- res$stats
     paste0("La correlación bivariada entre ", CTX(v$x), " y ", CTX(v$y), " fue r = ", fmt_num(s$r_biv, 3), " (p ", fmt_p(s$p_biv), "). Al controlar por ", CTX(v$z),
-           " —posible variable de confusión (", v$x, " ~ ", v$z, ": r = ", fmt_num(s$r_xz, 2), "; ", v$y, " ~ ", v$z, ": r = ", fmt_num(s$r_yz, 2), ")—, la correlación parcial fue r = ",
-           fmt_num(s$r_partial, 3), " (p ", fmt_p(s$p_partial), ", n = ", s$n, "), ", if (abs(s$r_partial - s$r_biv) > 0.1) "lo que modifica sustancialmente la relación observada." else "similar a la bivariada, por lo que la tercera variable no explica la relación.",
-           " Siempre debe considerarse la posible influencia de variables de confusión al calcular correlaciones [Field, 2012].")
+           ", la correlación parcial fue r = ", fmt_num(s$r_partial, 3), " (n = ", s$n, "); por su parte, ", CTX(v$z), " se asocia con ", CTX(v$x),
+           " (r = ", fmt_num(s$r_xz, 2), ", p ", fmt_p(s$p_xz), ") y con ", CTX(v$y), " (r = ", fmt_num(s$r_yz, 2), ", p ", fmt_p(s$p_yz), "). ",
+           CTX(paste0("Interprete la comparación entre la correlación bivariada y la parcial: si la asociación entre ", v$x, " y ", v$y,
+                      " se mantiene una vez ajustado el efecto de ", v$z, ", esta no induce una asociación espuria; si cambia, ", v$z, " actúa como variable de confusión.")),
+           " Siempre se debe considerar la posible influencia de variables de confusión al calcular correlaciones [Austin, 2011; Field et al., 2012].")
   }
 ))
 
 ado_register(list(
   id = "pps", family = "correlacion", order = 5, label = "Predictive Power Score (PPS)",
-  description = "Capacidad predictiva (asimétrica, no lineal) de varias variables sobre una respuesta (ppsr).",
+  description = "Poder predictivo (0 a 1; asimétrico, no lineal, admite variables categóricas) de varias variables sobre una respuesta (ppsr).",
   chapter = "Correlaciones",
   roles = list(target = role("Variable objetivo (respuesta)", "any"), predictors = role("Predictores candidatos", "any", multiple = TRUE, min = 1)),
   example = list(file = "DXKTw.txt", vars = list(target = "Tqx", predictors = c("Classcx", "Imc", "Ed", "Sexo", "Grupo")), note = "¿Qué variables predicen el tiempo quirúrgico?"),
   alternative = NULL,
   descriptives = function(d, v) NULL,
-  assumptions = function(d, v) list(checks = list(check_obj("info", "PPS", NA, "El PPS no exige supuestos distribucionales; se estima por validación cruzada (árbol de decisión), por lo que puede variar ligeramente entre ejecuciones.")), decision = list(parametric = TRUE, all_met = TRUE, violated = character(0), reason = "Sin supuestos.")),
+  assumptions = function(d, v) list(checks = list(check_obj("info", "PPS", NA, "El PPS se calcula con árboles de clasificación y regresión (CART) comparados con un modelo base (mediana o clase más frecuente) y se estima mediante validación cruzada, por lo que su valor puede variar ligeramente entre ejecuciones.")),
+                                    decision = list(parametric = TRUE, all_met = TRUE, violated = character(0), reason = "Se calcula el PPS de cada predictor sobre la respuesta (ppsr::score).")),
   run = function(d, v, opts) {
-    dd <- d[c(v$target, v$predictors)]; for (nm in names(dd)) if (is.character(dd[[nm]])) dd[[nm]] <- factor(dd[[nm]])
-    dd <- dd[complete.cases(dd), ]
-    sc <- do.call(rbind, lapply(v$predictors, function(x) { r <- ppsr::score(dd, x = x, y = v$target); data.frame(x = x, y = v$target, pps = r$pps) }))
-    sc <- sc[order(-sc$pps), ]
+    # Como en el libro: se pasan las columnas tal cual; score() usa los casos completos de cada par x-y
+    dd <- d[c(v$target, v$predictors)]
+    sc <- do.call(rbind, lapply(v$predictors, function(x) {
+      data.frame(x = x, y = v$target, pps = ppsr::score(dd, x = x, y = v$target, verbose = FALSE)$pps, pps_inverso = ppsr::score(dd, x = v$target, y = x, verbose = FALSE)$pps) }))
+    sc <- sc[order(-sc$pps), ]; rownames(sc) <- NULL
+    tab <- setNames(sc, c("x (predictor)", "y (respuesta)", "PPS x → y", "PPS y → x"))
     list(main = sc, stats = list(top = sc$x[1], top_pps = sc$pps[1]),
-         tables = list("PPS de cada predictor sobre la respuesta" = sc), notes = "PPS 0 = sin poder predictivo; 1 = predicción perfecta. Es asimétrico (x→y ≠ y→x).")
+         tables = list("PPS de cada predictor sobre la respuesta (y su inverso)" = tab),
+         notes = "PPS 0 = ausencia de poder predictivo; 1 = predicción perfecta. Es asimétrico (x → y ≠ y → x) y no indica la dirección del efecto.")
   },
   posthoc = NULL,
-  plots = list(pps = list(label = "PPS por predictor", fn = function(d, v, res, cos) {
-    cos <- cos_merge(cos); sc <- res$main; sc$x <- factor(sc$x, levels = rev(sc$x))
-    p <- ggplot(sc, aes(x, pps)) + geom_col(fill = cos$colour[1], alpha = 0.85) + coord_flip() + ylim(0, 1)
-    .finish(p, cos, "Predictor", paste("PPS →", v$target)) })),
+  plots = list(pps = list(label = "PPS por predictor (visualize_pps)", fn = function(d, v, res, cos) {
+    cos <- cos_merge(cos)
+    p <- ppsr::visualize_pps(d[c(v$target, v$predictors)], y = v$target, verbose = FALSE) + theme_bw(base_size = cos$base_size)
+    if (nzchar(cos$title)) p <- p + labs(title = cos$title)
+    p })),
   report = function(res, d, v, checks) {
     s <- res$stats; sc <- res$main
-    paste0("Se calculó el Predictive Power Score (PPS) de ", length(v$predictors), " variables sobre ", CTX(v$target), ". El mayor poder predictivo correspondió a ", CTX(s$top), " (PPS = ", fmt_num(s$top_pps), "); ",
-           paste(paste0(sc$x, " = ", fmt_num(sc$pps)), collapse = ", "), ". El PPS complementa a la correlación: informa de la capacidad predictiva —incluso no lineal— sin indicar dirección del efecto; ",
-           "para un IC 95 % puede emplearse remuestreo bootstrap [Wetschoreck et al., 2021].")
+    paste0("Se calculó el Predictive Power Score (PPS) de ", length(v$predictors), " variables para predecir ", CTX(v$target), ". El mayor poder predictivo correspondió a ",
+           CTX(s$top), " (PPS ", s$top, " → ", v$target, " = ", fmt_num(s$top_pps), "); ", paste(paste0(sc$x, " = ", fmt_num(sc$pps)), collapse = ", "), ". ",
+           "La naturaleza asimétrica del PPS se aprecia al invertir los papeles: ", paste(paste0(v$target, " → ", sc$x, " = ", fmt_num(sc$pps_inverso)), collapse = ", "), ". ",
+           "El PPS no sustituye a la correlación, sino que la complementa: informa sobre la capacidad predictiva (incluso no lineal) de una variable sobre otra, sin indicar la dirección del efecto. ",
+           "Dado que se estima mediante validación cruzada, su valor puede variar ligeramente entre ejecuciones; para reportar un intervalo de confianza al 95 % puede emplearse remuestreo bootstrap [Laken, 2021].")
   }
 ))

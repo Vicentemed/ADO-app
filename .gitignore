@@ -2,3 +2,7 @@
 .RData
 .Rproj.user/
 *.Rproj
+
+# Verificación contra el libro: texto del libro y resultados generados (no se publican)
+tests/verificacion_libro/libro_*.txt
+tests/verificacion_libro/result*.csv

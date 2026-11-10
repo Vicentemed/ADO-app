@@ -1,5 +1,5 @@
 # =============================================================================
-# app.R — ADO: asistente de análisis guiado (Análisis de Datos en Odontología)
+# app.R - ADO: asistente de análisis guiado (Análisis de Datos en Odontología)
 # Flujo: análisis → datos → preprocesar → variables (+ estrato opcional) →
 #        descriptiva → supuestos/decisión → análisis → post-hoc → gráficos → reporte Word
 # Si se elige una variable de estratificación, TODA la secuencia se ejecuta
@@ -13,7 +13,7 @@ for (f in list.files(file.path("R", "analyses"), full.names = TRUE)) source(f, e
 STEPS <- c("1. Datos", "2. Preprocesar", "3. Variables", "4. Descriptiva", "5. Supuestos", "6. Análisis", "7. Post-hoc", "8. Gráficos", "9. Reporte")
 
 ui <- page_sidebar(
-  title = tags$span(tags$b("ADO"), " · Asistente de análisis — ", tags$i("Análisis de Datos en Odontología")),
+  title = tags$span(tags$b("ADO"), " · Asistente de análisis - ", tags$i("Análisis de Datos en Odontología")),
   theme = bs_theme(version = 5, bootswatch = "flatly", primary = "#2E86C1"),
   tags$head(tags$link(rel = "stylesheet", href = "style.css")),
   sidebar = sidebar(width = 330, open = TRUE,
@@ -76,7 +76,7 @@ server <- function(input, output, session) {
     selectInput("analysis", "Análisis", choices = ado_choices(input$family), selectize = FALSE, width = "100%") })
   spec <- reactive({ req(input$analysis); req(ado_has(input$analysis)); ado_get(input$analysis) })
   output$analysis_desc <- renderUI({ s <- spec(); tags$p(class = "small text-muted", s$description, tags$br(), tags$i("Capítulo: ", s$chapter)) })
-  output$example_note <- renderUI({ s <- spec(); tags$p(class = "small", tags$b(s$example$file), " — ", s$example$note) })
+  output$example_note <- renderUI({ s <- spec(); tags$p(class = "small", tags$b(s$example$file), " - ", s$example$note) })
 
   # ---- datos -------------------------------------------------------------------
   d_raw <- reactive({
@@ -105,15 +105,18 @@ server <- function(input, output, session) {
 
   # ---- variables + estrato --------------------------------------------------------
   output$roles_ui <- renderUI({ s <- spec(); dd <- d(); role_input_ui("var", s, dd, preset = if (input$src == "example") s$example$vars else list()) })
+  # Los selectores de variables deben existir aunque no se haya abierto la pestaña «3. Variables»:
+  # de ellos dependen supuestos, opciones (p. ej. el método post-hoc) y análisis.
+  outputOptions(output, "roles_ui", suspendWhenHidden = FALSE)
   v <- reactive({ read_roles(input, "var", spec()) })
   output$strata_ui <- renderUI({ dd <- d(); req(dd); used <- unlist(v())
     cand <- setdiff(names(dd)[sapply(dd, function(x) { k <- var_kind(x); k %in% c("factor", "binary", "numeric_small") })], used)
-    selectInput("strata", "Variable de estratificación", choices = c("(ninguna — análisis global)" = "", cand), selected = isolate(input$strata) %||% "", selectize = FALSE, width = "100%") })
+    selectInput("strata", "Variable de estratificación", choices = c("(ninguna - análisis global)" = "", cand), selected = isolate(input$strata) %||% "", selectize = FALSE, width = "100%") })
   strata <- reactive({ x <- input$strata; if (is.null(x) || !nzchar(x)) NULL else x })
   problems <- reactive({ dd <- d(); req(dd); p <- validate_roles(dd, spec(), v()); st <- strata()
     if (!is.null(st) && st %in% unlist(v())) p <- c(p, "La variable de estratificación no puede ser también una variable del análisis."); p })
   output$roles_msg <- renderUI({ p <- problems(); if (length(p)) tags$div(class = "alert alert-warning small", tags$ul(lapply(p, tags$li))) else tags$div(class = "alert alert-success small", "Selección válida.") })
-  output$roles_help <- renderUI({ s <- spec(); tags$ul(lapply(names(s$roles), function(rn) { r <- s$roles[[rn]]; tags$li(tags$b(r$label), " — tipo: ", r$type, if (isTRUE(r$multiple)) " (varias)", if (!isTRUE(r$required)) " (opcional)") })) })
+  output$roles_help <- renderUI({ s <- spec(); tags$ul(lapply(names(s$roles), function(rn) { r <- s$roles[[rn]]; tags$li(tags$b(r$label), " - tipo: ", r$type, if (isTRUE(r$multiple)) " (varias)", if (!isTRUE(r$required)) " (opcional)") })) })
   ok <- reactive({ length(problems()) == 0 })
 
   # Lista de subconjuntos: uno por estrato (o uno solo con todos los datos)
@@ -153,7 +156,7 @@ server <- function(input, output, session) {
       list(spec = sr, res = r, opts = opts, name = names(L)[i]) }) })
   output$run_ui <- renderUI({ R <- res_list(); if (is.null(R)) return(tags$em("Pulse «Ejecutar análisis»."))
     strata_tabs(sapply(R, `[[`, "name"), function(i) { x <- R[[i]]; if (is.null(x$res)) return(tags$em("No se pudo ejecutar en este estrato."))
-      tagList(tags$p(class = "small", tags$b(x$spec$label), if (!is.null(x$res$notes)) tags$span(class = "text-muted", " — ", x$res$notes)), tables_ui(x$res$tables)) }) })
+      tagList(tags$p(class = "small", tags$b(x$spec$label), if (!is.null(x$res$notes)) tags$span(class = "text-muted", " - ", x$res$notes)), tables_ui(x$res$tables)) }) })
 
   # ---- post-hoc (por estrato) --------------------------------------------------------------
   ph_list <- reactive({ R <- res_list(); req(R); L <- d_list()
@@ -195,8 +198,8 @@ server <- function(input, output, session) {
                plot_labels = sapply(x$spec$plots, `[[`, "label"), report_md = T[[i]], notes = x$res$notes) })
         blocks <- Filter(Negate(is.null), blocks); s <- spec()
         tt <- trimws(input$rep_title %||% "")
-        ctx <- list(title = if (nzchar(tt)) tt else paste("Reporte:", s$label, if (is_strat()) paste("— estratificado por", strata()) else ""),
-                    subtitle = if (nzchar(tt)) paste(s$label, if (is_strat()) paste("— estratificado por", strata()) else "") else NULL,
+        ctx <- list(title = if (nzchar(tt)) tt else paste("Reporte:", s$label, if (is_strat()) paste("- estratificado por", strata()) else ""),
+                    subtitle = if (nzchar(tt)) paste(s$label, if (is_strat()) paste("- estratificado por", strata()) else "") else NULL,
                     analysis = s$label, family = FAMILIES[[s$family]], chapter = s$chapter,
                     contexto = if (nzchar(trimws(input$contexto))) input$contexto else contexto_placeholder(),
                     dataset = if (input$src == "example") s$example$file else input$file$name, vars = v(), strata = strata(),
