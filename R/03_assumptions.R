@@ -4,7 +4,7 @@
 #  - Shapiro-Wilk: p > 0.05 → sin evidencia de desviación de la normalidad
 #    (no equivale a demostrarla); p < 0.05 → supuesto violado.
 #  - n > 50: Shapiro tiende a ser significativo; la decisión se toma con
-#    sesgo/curtosis estandarizados: |skew.2SE| o |kurt.2SE| > 1.96 → violado.
+#    sesgo/curtosis estandarizados: |skew.2SE| o |kurt.2SE| > 1 → violado (Field et al., 2012).
 #  - Levene (center = median): p > 0.05 → varianzas homogéneas.
 # =============================================================================
 
@@ -18,16 +18,16 @@ check_normality <- function(x, label = "normalidad") {
   skew2 <- if (!is.null(sk)) unname(sk["skew.2SE"]) else NA
   kurt2 <- if (!is.null(sk)) unname(sk["kurt.2SE"]) else NA
   # Cap. 9 (9.2.5–9.2.6): con n > 50 Shapiro-Wilk tiende a ser significativo ante desviaciones pequeñas;
-  # la decisión se apoya en sesgo y curtosis estandarizados (|skew.2SE| o |kurt.2SE| > 1.96 → desviación).
+  # la decisión se apoya en sesgo y curtosis estandarizados (sesgo y curtosis divididos entre 2·EE: |skew.2SE| o |kurt.2SE| > 1 → desviación, p < 0.05).
   large <- n > 50 && !is.na(skew2) && !is.na(kurt2)
   sw_txt <- if (is.na(p)) paste0("No fue posible aplicar Shapiro-Wilk a ", label, " (n = ", n, ").")
             else paste0("Shapiro-Wilk sobre ", label, ": W = ", fmt_num(W, 3), ", p ", fmt_p(p), ".")
   if (large) {
-    met <- abs(skew2) <= 1.96 && abs(kurt2) <= 1.96
+    met <- abs(skew2) <= 1 && abs(kurt2) <= 1
     txt <- paste0(sw_txt, " Con n > 50 (n = ", n, ") la prueba de Shapiro-Wilk tiende a ser significativa ante desviaciones pequeñas, por lo que la decisión se apoya en el gráfico Q-Q ",
                   "y en el sesgo y la curtosis estandarizados (skew.2SE = ", fmt_num(skew2), "; kurt.2SE = ", fmt_num(kurt2), "): ",
-                  if (met) "|valores| ≤ 1.96, sin evidencia de una desviación relevante de la normalidad."
-                  else "|valor| > 1.96, desviación significativa de la normalidad: el supuesto se considera violado.")
+                  if (met) "|valores| ≤ 1, sin evidencia de una desviación relevante de la normalidad."
+                  else "|valor| > 1, desviación significativa de la normalidad: el supuesto se considera violado.")
   } else {
     met <- if (is.na(p)) NA else p > ALPHA
     txt <- if (is.na(p)) sw_txt

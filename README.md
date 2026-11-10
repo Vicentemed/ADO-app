@@ -61,7 +61,7 @@ Cada análisis está vinculado al capítulo del libro donde se explica con un co
 
 Los post-hoc y contrastes se eligen en el paso 6, según el análisis: Tukey, Dunnett (con grupo control a elección), Bonferroni, Holm, Benjamini-Hochberg, Games-Howell, contrastes ortogonales o personalizados y análisis de tendencia en el ANOVA de una vía; Siegel y Castellan o Wilcoxon por pares en Kruskal-Wallis; `friedmanmc` en Friedman; residuos estandarizados ajustados en tablas mayores de 2×2.
 
-Las reglas de decisión siguen el libro: la normalidad se evalúa con Shapiro-Wilk y, con n > 50, con el sesgo y la curtosis estandarizados; chi-cuadrado frente a Fisher se decide solo por las frecuencias esperadas (alguna < 5 → Fisher); en medidas repetidas la ruta depende de la prueba de Mauchly.
+Las reglas de decisión siguen el libro: la normalidad se evalúa con Shapiro-Wilk y, con n > 50, con el sesgo y la curtosis estandarizados (|valor| > 1); chi-cuadrado frente a Fisher se decide solo por las frecuencias esperadas (alguna < 5 → Fisher); en medidas repetidas, si la prueba de Mauchly es significativa se aplica la corrección de Greenhouse-Geisser o Huynh-Feldt (o el modelo multinivel); Friedman queda para respuestas ordinales o marcadamente no normales.
 
 ## Flujo de uso
 

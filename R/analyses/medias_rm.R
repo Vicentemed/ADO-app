@@ -2,7 +2,7 @@
 # R/analyses/medias_rm.R - Diseños de medidas repetidas (Caps. 21, 22, 35, 36)
 #   7. ANOVA de medidas repetidas: ezANOVA (F + Mauchly + GG/HF) o multinivel
 #      lme() comparado con el modelo nulo por razón de verosimilitud (L.Ratio)
-#   8. ANOVA de Friedman (alternativa cuando se viola la esfericidad, Cap. 35)
+#   8. ANOVA de Friedman (alternativa para respuestas ordinales o no normales, Cap. 35)
 #   8.5 Curvas de crecimiento (drc, LL.2) comparadas por razón de verosimilitud
 # =============================================================================
 
@@ -71,13 +71,16 @@ ado_register(list(
     ez <- tryCatch(.rm_ez(long), error = function(e) NULL)
     s <- if (is.null(ez)) list(ok = FALSE) else .rm_sph(ez)
     checks <- list(.rm_sph_check(s))
-    dec <- decide_path(checks, TRUE)
-    # El libro (Cap. 35.3.1): Mauchly significativo → «el ANOVA de medidas repetidas no es apropiado y se opta por el ANOVA de Friedman».
-    if (!isTRUE(dec$all_met))
-      dec$reason <- paste0("La prueba de Mauchly indica violación de la esfericidad. Según el libro (Cap. 35) se opta por el ANOVA de Friedman. ",
-                           "Para mantener el ANOVA de medidas repetidas elija esa ruta: se aplica la corrección de ",
-                           if (identical(s$corr, "GG")) "Greenhouse-Geisser" else "Huynh-Feldt",
-                           " (Cap. 21), o use el enfoque multinivel lme(), que no requiere esfericidad (Cap. 22.7).")
+    # Caps. 21-22 y 35.3: si Mauchly es significativo, el F sin corrección no es apropiado, pero el ANOVA de
+    # medidas repetidas se mantiene con la corrección GG/HF (o el modelo multinivel). Friedman queda como
+    # alternativa para respuestas ordinales o marcadamente no normales, a elección del usuario.
+    viol <- isTRUE(s$ok) && s$p < ALPHA
+    dec <- list(parametric = TRUE, all_met = !viol, violated = if (viol) "Esfericidad (Mauchly)" else character(0),
+                reason = if (!viol) "Se cumplen los supuestos: se aplica el ANOVA de medidas repetidas con el estadístico F sin corrección."
+                         else paste0("La prueba de Mauchly indica violación de la esfericidad: el estadístico F sin corrección no es apropiado. ",
+                                     "Se mantiene el ANOVA de medidas repetidas con la corrección de ", if (identical(s$corr, "GG")) "Greenhouse-Geisser" else "Huynh-Feldt",
+                                     " (Cap. 21); también puede usarse el enfoque multinivel lme(), que no requiere esfericidad (Cap. 22.7). ",
+                                     "Si la respuesta es ordinal o su distribución es marcadamente asimétrica, elija la ruta del ANOVA de Friedman (Cap. 35)."))
     list(checks = checks, decision = dec)
   },
   run = function(d, v, opts) {
@@ -166,7 +169,7 @@ ado_register(list(
 ado_register(list(
   id = "friedman", family = "medias", order = 8,
   label = "ANOVA de Friedman (≥ 3 tiempos)",
-  description = "Alternativa no paramétrica al ANOVA de medidas repetidas cuando se viola la esfericidad (no la requiere).",
+  description = "Alternativa no paramétrica al ANOVA de medidas repetidas para respuestas ordinales o marcadamente no normales; no requiere esfericidad.",
   chapter = "ANOVA de Friedman en R",
   roles = list(measures = role("Columnas de medición (≥ 3 tiempos/condiciones)", "numeric", multiple = TRUE, min = 3),
                subject  = role("Identificador del sujeto (opcional)", "id", required = FALSE)),
