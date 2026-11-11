@@ -27,6 +27,7 @@
 .ADO_REGISTRY <- .ado_env()
 
 FAMILIES <- c(
+  descriptiva   = "Estadística descriptiva",
   medias        = "Comparación de medias",
   correlacion   = "Correlación",
   categoricos   = "Datos categóricos",

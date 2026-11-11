@@ -18,7 +18,7 @@ ui <- page_sidebar(
   tags$head(tags$link(rel = "stylesheet", href = "style.css")),
   sidebar = sidebar(width = 330, open = TRUE,
     tags$h6("Tipo de análisis"),
-    selectInput("family", "Familia", choices = setNames(names(FAMILIES), FAMILIES), selectize = FALSE),
+    selectInput("family", "Familia", choices = setNames(names(FAMILIES), FAMILIES), selected = "medias", selectize = FALSE),
     uiOutput("analysis_ui"),
     uiOutput("analysis_desc"),
     tags$hr(),
@@ -156,7 +156,8 @@ server <- function(input, output, session) {
       list(spec = sr, res = r, opts = opts, name = names(L)[i]) }) })
   output$run_ui <- renderUI({ R <- res_list(); if (is.null(R)) return(tags$em("Pulse «Ejecutar análisis»."))
     strata_tabs(sapply(R, `[[`, "name"), function(i) { x <- R[[i]]; if (is.null(x$res)) return(tags$em("No se pudo ejecutar en este estrato."))
-      tagList(tags$p(class = "small", tags$b(x$spec$label), if (!is.null(x$res$notes)) tags$span(class = "text-muted", " - ", x$res$notes)), tables_ui(x$res$tables)) }) })
+      tagList(tags$p(class = "small", tags$b(x$spec$label), if (!is.null(x$res$notes)) tags$span(class = "text-muted", " - ", x$res$notes)),
+              if (!is.null(x$res$t1)) table1_html(x$res$t1) else tables_ui(x$res$tables)) }) })
 
   # ---- post-hoc (por estrato) --------------------------------------------------------------
   ph_list <- reactive({ R <- res_list(); req(R); L <- d_list()
@@ -191,7 +192,7 @@ server <- function(input, output, session) {
       withProgress(message = "Generando reporte Word…", value = 0.2, {
         blocks <- lapply(seq_along(R), function(i) { x <- R[[i]]; if (is.null(x$res)) return(NULL)
           list(name = x$name, n = nrow(L[[i]]), analysis = x$spec$label,
-               t1 = if ("desc" %in% parts) tryCatch(x$spec$descriptives(L[[i]], v()), error = function(e) NULL) else NULL,
+               t1 = if ("desc" %in% parts) (if (!is.null(x$res$t1)) x$res$t1 else tryCatch(x$spec$descriptives(L[[i]], v()), error = function(e) NULL)) else NULL,
                checks = if ("checks" %in% parts) A[[i]]$checks else list(), decision = A[[i]]$decision,
                tables = if ("tables" %in% parts) x$res$tables else list(), posthoc_tables = if ("posthoc" %in% parts && !is.null(P[[i]])) P[[i]]$tables else list(),
                plots = if ("plots" %in% parts) Filter(Negate(is.null), lapply(x$spec$plots, function(pl) tryCatch(pl$fn(L[[i]], v(), x$res, cos), error = function(e) NULL))) else list(),

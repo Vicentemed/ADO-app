@@ -16,8 +16,10 @@ ado_theme <- function(base_size = 12) ggplot2::theme_bw(base_size = base_size)
 if (!rmarkdown::pandoc_available()) {
   cand <- c("C:/Program Files/RStudio/resources/app/bin/quarto/bin/tools",
             "C:/Program Files/RStudio/resources/app/bin/quarto/bin/tools/x86_64",
-            "C:/Program Files/Quarto/bin/tools")
-  for (p in cand) if (dir.exists(p)) { Sys.setenv(RSTUDIO_PANDOC = p); break }
+            "C:/Program Files/Quarto/bin/tools",
+            file.path(Sys.getenv("LOCALAPPDATA"), "Programs/RStudio/resources/app/bin/quarto/bin/tools"),   # RStudio instalado por usuario
+            file.path(Sys.getenv("LOCALAPPDATA"), "Programs/Quarto/bin/tools"))
+  for (p in cand) if (file.exists(file.path(p, "pandoc.exe")) || file.exists(file.path(p, "pandoc"))) { Sys.setenv(RSTUDIO_PANDOC = p); break }
 }
 
 # ---- Formateadores para el texto "Cómo reportar" --------------------------
