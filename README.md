@@ -76,7 +76,7 @@ La barra lateral permite elegir la **familia** y el **análisis**, y la fuente d
 6. **Análisis.** Ajuste las opciones de la prueba y pulse **Ejecutar análisis**. Se muestran las tablas de resultados.
 7. **Post-hoc.** Contrastes múltiples cuando el análisis los requiere.
 8. **Gráficos.** Elija el gráfico y ajuste colores, títulos y otros parámetros cosméticos.
-9. **Reporte.** Escriba el título y el **contexto de los datos** (objetivo, población, diseño, significado de las variables), marque las secciones a incluir y pulse **Generar reporte Word**. La app también muestra un texto de *Cómo reportar* prellenado con los resultados, donde los corchetes `[ ]` señalan lo que debe completar el usuario.
+9. **Reporte.** Escriba el título y el **contexto de los datos** (objetivo, población, diseño, significado de las variables), marque las secciones a incluir y pulse **Generar reporte Word**. El reporte lleva como título la prueba que finalmente se aplicó (por ejemplo, Kruskal-Wallis si se partió de un ANOVA y no se cumplieron los supuestos), incluye el gráfico Q-Q de los supuestos y termina con la versión de R y los paquetes utilizados. La app también muestra un texto de *Cómo reportar* prellenado con los resultados, donde los corchetes `[ ]` señalan lo que debe completar el usuario.
 
 ## Requisitos e instalación
 

@@ -179,7 +179,10 @@ server <- function(input, output, session) {
   # ---- análisis (por estrato) -----------------------------------------------------------------
   spec_opts <- reactive({ A <- assump_list(); spec_for(A[[1]]) })   # opciones según la prueba del primer estrato
   output$opts_ui <- renderUI({ opts_input_ui("opt", spec_opts()) })
-  output$run_title <- renderUI({ tags$span("Resultados: ", tags$b(spec()$label), if (is_strat()) tags$span(" · estratificado por ", tags$b(strata()))) })
+  # Etiqueta de la prueba realmente aplicada (puede diferir de la elegida si no se cumplen los supuestos)
+  final_label <- function(R) { lb <- unique(vapply(Filter(function(x) !is.null(x$spec), R), function(x) x$spec$label, "")); if (!length(lb)) spec()$label else if (length(lb) == 1) lb else paste0(paste(lb, collapse = " / "), " (según el estrato)") }
+  output$run_title <- renderUI({ R <- tryCatch(res_list(), error = function(e) NULL); lab <- if (is.null(R)) tryCatch(spec_opts()$label, error = function(e) spec()$label) else final_label(R)
+    tags$span("Resultados: ", tags$b(lab), if (is_strat()) tags$span(" · estratificado por ", tags$b(strata()))) })
   res_list <- eventReactive(input$run, { req(ok()); L <- d_list(); A <- assump_list()
     lapply(seq_along(L), function(i) { sr <- spec_for(A[[i]]); opts <- read_opts(input, "opt", sr)
       r <- tryCatch(sr$run(L[[i]], v(), opts), error = function(e) { showNotification(paste0(names(L)[i], ": ", conditionMessage(e)), type = "error", duration = 10); NULL })
@@ -215,7 +218,8 @@ server <- function(input, output, session) {
 
   output$download <- downloadHandler(
     filename = function() { tt <- trimws(input$rep_title %||% "")
-      base <- if (nzchar(tt)) gsub("[^A-Za-z0-9_.-]+", "_", iconv(tt, to = "ASCII//TRANSLIT")) else paste0("Reporte_", spec()$id, if (is_strat()) paste0("_por_", strata()) else "")
+      fid <- tryCatch(paste(unique(vapply(res_list(), function(x) x$spec$id, "")), collapse = "-"), error = function(e) spec()$id)
+      base <- if (nzchar(tt)) gsub("[^A-Za-z0-9_.-]+", "_", iconv(tt, to = "ASCII//TRANSLIT")) else paste0("Reporte_", fid, if (is_strat()) paste0("_por_", strata()) else "")
       paste0(base, "_", format(Sys.time(), "%Y%m%d_%H%M"), ".docx") },
     content = function(file) {
       R <- res_list(); A <- assump_list(); L <- d_list(); P <- ph_list(); T <- report_list(); cos <- read_cos(input, "cos"); parts <- input$rep_parts
@@ -223,15 +227,25 @@ server <- function(input, output, session) {
         blocks <- lapply(seq_along(R), function(i) { x <- R[[i]]; if (is.null(x$res)) return(NULL)
           list(name = x$name, n = nrow(L[[i]]), analysis = x$spec$label,
                t1 = if ("desc" %in% parts) { tt <- if (!is.null(t1_sel())) t1_for(L[[i]], x$spec) else if (!is.null(x$res$t1)) x$res$t1 else t1_for(L[[i]], x$spec); if (inherits(tt, "t1_error")) NULL else tt } else NULL,
-               checks = if ("checks" %in% parts) A[[i]]$checks else list(), decision = A[[i]]$decision,
+               checks = if ("checks" %in% parts) A[[i]]$checks else list(),
+               decision = local({ dc <- A[[i]]$decision; s0 <- spec(); forced_alt <- !identical(x$spec$id, s0$id) && isTRUE(dc$parametric); forced_par <- identical(x$spec$id, s0$id) && isFALSE(dc$parametric) && !is.null(s0$alternative)
+                 # la ruta elegida a mano puede no coincidir con la decisión automática: el reporte lo dice
+                 if (forced_alt) dc$reason <- "Se cumplen los supuestos de la prueba paramétrica; no obstante, se eligió aplicar la alternativa no paramétrica."
+                 if (forced_par) dc$reason <- paste0(sub("(Según el libro, )?[Ss]e opta por la alternativa no paramétrica\\.\\s*$", "", dc$reason), "No obstante, se eligió mantener la prueba paramétrica.")
+                 dc }),
+               qq = if ("checks" %in% parts) tryCatch(qq_data(x$spec, L[[i]], v()), error = function(e) NULL) else NULL,
+               posthoc_notes = if ("posthoc" %in% parts && !is.null(P[[i]])) P[[i]]$notes else NULL,
                tables = if ("tables" %in% parts) x$res$tables else list(), posthoc_tables = if ("posthoc" %in% parts && !is.null(P[[i]])) P[[i]]$tables else list(),
                plots = if ("plots" %in% parts) Filter(Negate(is.null), lapply(x$spec$plots, function(pl) tryCatch(pl$fn(L[[i]], v(), x$res, cos), error = function(e) NULL))) else list(),
                plot_labels = sapply(x$spec$plots, `[[`, "label"), report_md = T[[i]], notes = x$res$notes) })
         blocks <- Filter(Negate(is.null), blocks); s <- spec()
+        fin <- Filter(function(x) !is.null(x$res), R); fspecs <- lapply(fin, `[[`, "spec"); fspecs <- fspecs[!duplicated(vapply(fspecs, `[[`, "", "id"))]
+        flab <- final_label(fin)                                   # títulos con la prueba realmente aplicada
         tt <- trimws(input$rep_title %||% "")
-        ctx <- list(title = if (nzchar(tt)) tt else paste("Reporte:", s$label, if (is_strat()) paste("- estratificado por", strata()) else ""),
-                    subtitle = if (nzchar(tt)) paste(s$label, if (is_strat()) paste("- estratificado por", strata()) else "") else NULL,
-                    analysis = s$label, family = FAMILIES[[s$family]], chapter = s$chapter,
+        ctx <- list(title = if (nzchar(tt)) tt else paste("Reporte:", flab, if (is_strat()) paste("- estratificado por", strata()) else ""),
+                    subtitle = if (nzchar(tt)) paste(flab, if (is_strat()) paste("- estratificado por", strata()) else "") else NULL,
+                    analysis = flab, initial = if (!identical(flab, s$label)) s$label else NULL,
+                    family = FAMILIES[[fspecs[[1]]$family]], chapter = fspecs[[1]]$chapter, session = report_session(fspecs),
                     contexto = if (nzchar(trimws(input$contexto))) input$contexto else contexto_placeholder(),
                     dataset = if (input$src == "example") s$example$file else input$file$name, vars = v(), strata = strata(),
                     preproc_log = if ("preproc" %in% parts) pp$log() else character(0),

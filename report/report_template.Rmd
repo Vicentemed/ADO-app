@@ -21,13 +21,14 @@ blocks <- if (!is.null(ctx$blocks)) ctx$blocks else list(list(name = NULL, n = c
   report_md = ctx$report_md, notes = ctx$notes))
 strat <- length(blocks) > 1
 H <- function(level, txt) cat("\n", strrep("#", level), " ", txt, "\n\n", sep = "")
+SL <- if (exists("sin_libro")) sin_libro else function(x) x   # el cuerpo del reporte no remite al libro
 ```
 
 # 1. Contexto del estudio
 
 `r ctx$contexto`
 
-**Análisis:** `r ctx$analysis` (familia: `r ctx$family`; capítulo de referencia: *`r ctx$chapter`*).
+**Análisis:** `r ctx$analysis` (familia: `r ctx$family`). `r if (!is.null(ctx$initial) && nzchar(ctx$initial)) paste0("Análisis seleccionado inicialmente: ", ctx$initial, "; con base en la verificación de supuestos se aplicó ", ctx$analysis, ".")`
 **Datos:** `r ctx$dataset`. **Variables:** `r paste(names(ctx$vars), "=", sapply(ctx$vars, function(x) paste(x, collapse = ", ")), collapse = "; ")`.
 `r if (!is.null(ctx$strata)) paste0("**Análisis estratificado por ", ctx$strata, ":** ", length(blocks), " subanálisis (uno por nivel), cada uno con su propia verificación de supuestos y decisión.")`
 
@@ -57,35 +58,52 @@ for (b in blocks) {
   if (length(b$checks)) {
     if (!strat) sec <- sec + 1
     H(lvl, if (strat) "Verificación de supuestos y decisión" else paste0(sec, ". Verificación de supuestos"))
-    for (ch in b$checks) { est <- if (is.na(ch$met)) "informativo" else if (isTRUE(ch$met)) "se cumple" else "no se cumple"; cat("- **", ch$label, "** (", est, "): ", ch$text, "\n", sep = "") }
-    if (!is.null(b$decision$reason)) cat("\n**Decisión:** ", b$decision$reason, " Prueba aplicada: **", b$analysis, "**.\n", sep = "")
+    for (ch in b$checks) { est <- if (is.na(ch$met)) "informativo" else if (isTRUE(ch$met)) "se cumple" else "no se cumple"; cat("- **", SL(ch$label), "** (", est, "): ", SL(ch$text), "\n", sep = "") }
+    if (!is.null(b$decision$reason)) cat("\n**Decisión:** ", SL(b$decision$reason), " Prueba aplicada: **", b$analysis, "**.\n", sep = "")
     cat("\n")
+    if (length(b$qq) && exists("qq_draw")) {
+      cat("\n**Gráfico Q-Q** (car::qqPlot) de ", paste(names(b$qq), collapse = "; "), if (strat) paste0(" - ", b$name) else "",
+          ". Los puntos dentro de la banda de confianza indican que no hay evidencia de una desviación de la normalidad.\n\n", sep = "")
+      tryCatch(qq_draw(b$qq), error = function(e) cat("*(no se pudo dibujar: ", conditionMessage(e), ")*\n", sep = ""))
+      cat("\n")
+    }
   }
   if (length(b$tables)) {
     if (!strat) sec <- sec + 1
     H(lvl, if (strat) paste0("Resultados - ", b$analysis) else paste0(sec, ". Resultados del análisis (", b$analysis, ")"))
-    if (!is.null(b$notes)) cat("*", b$notes, "*\n\n", sep = "")
-    for (nm in names(b$tables)) { cat("\n**", nm, "**\n\n", sep = ""); print(kb(b$tables[[nm]])); cat("\n") }
+    if (!is.null(b$notes)) cat("*", SL(b$notes), "*\n\n", sep = "")
+    for (nm in names(b$tables)) { cat("\n**", SL(nm), "**\n\n", sep = ""); print(kb(b$tables[[nm]])); cat("\n") }
   }
   if (length(b$posthoc_tables)) {
     if (!strat) sec <- sec + 1
     H(lvl, if (strat) "Contrastes / post-hoc" else paste0(sec, ". Contrastes / post-hoc"))
-    for (nm in names(b$posthoc_tables)) { cat("\n**", nm, "**\n\n", sep = ""); print(kb(b$posthoc_tables[[nm]])); cat("\n") }
+    if (!is.null(b$posthoc_notes)) cat("*", SL(b$posthoc_notes), "*\n\n", sep = "")
+    for (nm in names(b$posthoc_tables)) { cat("\n**", SL(nm), "**\n\n", sep = ""); print(kb(b$posthoc_tables[[nm]])); cat("\n") }
   }
   if (length(b$plots)) {
     if (!strat) sec <- sec + 1
     H(lvl, if (strat) "Figuras" else paste0(sec, ". Figuras"))
     for (i in seq_along(b$plots)) {
       lab <- if (!is.null(b$plot_labels) && i <= length(b$plot_labels)) b$plot_labels[[i]] else paste("Figura", i)
-      cat("\n**Figura ", i, ".** ", lab, if (strat) paste0(" - ", b$name) else "", "\n\n", sep = "")
+      cat("\n**Figura ", i, ".** ", SL(lab), if (strat) paste0(" - ", b$name) else "", "\n\n", sep = "")
       tryCatch(draw(b$plots[[i]]), error = function(e) cat("*(no se pudo dibujar: ", conditionMessage(e), ")*\n", sep = ""))
       cat("\n")
     }
   }
   if (!strat) sec <- sec + 1
   H(lvl, if (strat) "Cómo reportar el resultado" else paste0(sec, ". Cómo reportar el resultado"))
-  cat("> **Nota:** párrafo prellenado con los valores calculados, siguiendo los recuadros \"Cómo reportar\" del libro. Los textos entre corchetes **[ ]** son placeholders que el usuario debe sustituir por el contexto de sus datos.\n\n")
-  cat(b$report_md, "\n\n")
+  cat("> **Nota:** párrafo prellenado con los valores calculados. Los textos entre corchetes **[ ]** son placeholders que el usuario debe sustituir por el contexto de sus datos.\n\n")
+  cat(SL(b$report_md), "\n\n")
+}
+```
+
+```{r session, results='asis'}
+ses <- ctx$session
+if (!is.null(ses)) {
+  H(1, paste0(sec + 1, ". Software utilizado"))
+  cat("El análisis se realizó con ", ses$r, " (", ses$platform, ").\n\n", sep = "")
+  if (length(ses$pkgs)) cat("**Paquetes de R utilizados en el análisis:** ", paste0(names(ses$pkgs), " ", ses$pkgs, collapse = ", "), ".\n\n", sep = "")
+  if (length(ses$infra)) cat("**Generación del reporte:** ", paste0(names(ses$infra), " ", ses$infra, collapse = ", "), ".\n\n", sep = "")
 }
 ```
 
