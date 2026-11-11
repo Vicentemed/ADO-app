@@ -76,6 +76,37 @@ checks_ui <- function(checks) {
   }))
 }
 
+# ---- Q-Q de normalidad para el paso de supuestos (car::qqPlot, cap. 9) ---------------
+# Devuelve una lista nombrada de vectores numéricos sobre los que se evalúa la normalidad
+# en cada análisis (respuesta, diferencias apareadas, residuos del modelo, etc.), o NULL.
+qq_data <- function(spec, d, v) {
+  if (is.function(spec$qq)) return(tryCatch(spec$qq(d, v), error = function(e) NULL))
+  g <- function(x) { x <- x[nzchar(x)]; if (length(x)) x else NULL }
+  numv <- function(nm) { y <- suppressWarnings(as.numeric(d[[nm]])); y[!is.na(y)] }
+  ok <- function(y) length(y) >= 3 && length(unique(y)) > 2
+  out <- list(); ms <- g(v$measures); resp <- g(v$response)
+  if (identical(spec$id, "lineal") && !is.null(resp) && !is.null(g(c(v$predictors, v$factors)))) {
+    pr <- unique(g(c(v$predictors, v$factors))); dd <- d[, c(resp[1], pr), drop = FALSE]
+    for (p in pr) if (p %in% v$factors || !is.numeric(dd[[p]])) dd[[p]] <- factor(dd[[p]])
+    m <- tryCatch(lm(as.formula(paste(bq(resp[1]), "~", paste(bq(pr), collapse = " + "))), data = dd), error = function(e) NULL)
+    if (!is.null(m)) out[["Residuos del modelo inicial"]] <- as.numeric(rstandard(m))
+  } else if (!is.null(ms) && length(ms) == 2) {
+    dif <- suppressWarnings(as.numeric(d[[ms[1]]]) - as.numeric(d[[ms[2]]])); out[[paste0("Diferencias (", ms[1], " - ", ms[2], ")")]] <- dif[!is.na(dif)]
+  } else if (!is.null(ms)) { for (m in ms) out[[m]] <- numv(m)
+  } else if (!is.null(g(v$method)) && !is.null(g(v$reference))) {
+    dif <- suppressWarnings(as.numeric(d[[v$method]]) - as.numeric(d[[v$reference]])); out[[paste0("Diferencias (", v$method, " - ", v$reference, ")")]] <- dif[!is.na(dif)]
+  } else {
+    for (nm in unique(c(resp, g(v$covariate), g(v$x), g(v$y)))) if (nm %in% names(d) && !nm %in% g(v$factors)) out[[nm]] <- numv(nm)
+  }
+  out <- Filter(ok, out); if (length(out) > 4) out <- out[1:4]
+  if (length(out)) out else NULL
+}
+qq_draw <- function(X, colour = ADO_COL) {
+  k <- length(X); op <- par(mfrow = c(ceiling(k / 2), min(k, 2)), mar = c(4.2, 4.2, 2.6, 1)); on.exit(par(op))
+  for (nm in names(X)) car::qqPlot(X[[nm]], main = paste("Q-Q:", nm), xlab = "Cuantiles teóricos (Normal)", ylab = "Cuantiles observados",
+                                   pch = 16, col = colour[1], col.lines = colour[2], id = FALSE)
+}
+
 # ---- Pestañas por estrato ------------------------------------------------------------------
 # names: etiquetas de los estratos; content_fn(i) devuelve la UI del estrato i.
 # Con un solo estrato devuelve el contenido directamente (sin pestañas).

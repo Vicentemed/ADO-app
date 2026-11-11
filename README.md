@@ -71,8 +71,8 @@ La barra lateral permite elegir la **familia** y el **análisis**, y la fuente d
 1. **Datos.** Elija *Ejemplo del libro* (se carga el conjunto de datos del capítulo) o *Subir mi archivo* (`.txt` o `.tsv` separados por tabulador, `.csv`, `.xlsx`). Los nombres de columna con espacios o símbolos se corrigen automáticamente y se avisa del cambio.
 2. **Preprocesar.** Operaciones opcionales que se aplican en orden y quedan registradas: eliminar filas o variables con valores faltantes, remover variables, filtrar filas (por categorías o por expresión), convertir entre formato ancho y largo, y cambiar el tipo de una variable (factor o numérica). Se puede deshacer la última operación o restablecer los datos originales.
 3. **Variables.** Asigne cada variable al rol que pide el análisis (respuesta, grupo, mediciones, sujeto, etc.). La app valida la selección e indica qué tipo requiere cada rol. Opcionalmente, elija una **variable de estratificación**: todo el análisis se repite por separado dentro de cada nivel y los resultados se muestran en pestañas.
-4. **Descriptiva.** Tabla descriptiva (table1) de las variables seleccionadas.
-5. **Supuestos.** Verificación de supuestos y decisión según la regla del libro. Puede dejar la ruta *automática* o forzar la prueba paramétrica o la alternativa.
+4. **Descriptiva.** Tabla descriptiva (table1) de las variables del análisis. En el panel de la izquierda se pueden elegir otras variables de respuesta (filas) y explicativas o de grupo (columnas), siguiendo `table1(~ respuestas | explicativas)`; la tabla elegida es la que entra al reporte.
+5. **Supuestos.** Verificación de supuestos y decisión según la regla del libro, con el gráfico Q-Q (`car::qqPlot`) de la respuesta, de las diferencias apareadas o de los residuos, según el análisis. Puede dejar la ruta *automática* o forzar la prueba paramétrica o la alternativa.
 6. **Análisis.** Ajuste las opciones de la prueba y pulse **Ejecutar análisis**. Se muestran las tablas de resultados.
 7. **Post-hoc.** Contrastes múltiples cuando el análisis los requiere.
 8. **Gráficos.** Elija el gráfico y ajuste colores, títulos y otros parámetros cosméticos.

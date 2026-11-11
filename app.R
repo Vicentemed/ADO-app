@@ -44,7 +44,9 @@ ui <- page_sidebar(
              tags$p(class = "small text-muted", "Si eliges una variable, el análisis completo se repite por separado dentro de cada uno de sus niveles (subanálisis), con su propia descriptiva, supuestos, decisión, post-hoc, gráficos y reporte.")),
         card(card_header("Qué pide este análisis"), uiOutput("roles_help")))),
     nav_panel(STEPS[4], value = "s4",
-      card(card_header("Estadística descriptiva (table1)"), uiOutput("desc_ui"))),
+      layout_columns(col_widths = c(4, 8),
+        card(card_header("Variables de la tabla: table1(~ respuestas | explicativas)"), uiOutput("t1_ui")),
+        card(card_header("Estadística descriptiva (table1)"), uiOutput("desc_ui")))),
     nav_panel(STEPS[5], value = "s5",
       card(card_header("Verificación de supuestos y decisión (regla del libro)"), uiOutput("path_ui"), uiOutput("checks_ui"))),
     nav_panel(STEPS[6], value = "s6",
@@ -129,9 +131,33 @@ server <- function(input, output, session) {
     tags$p(class = "small text-info", "Estratificado por ", tags$b(strata()), ": ", length(d_list()), " subanálisis") })
 
   # ---- descriptiva (por estrato) -------------------------------------------------------
+  # Selectores de la tabla: por defecto se muestra la tabla propia del análisis; si se eligen
+  # variables aquí, la tabla sigue table1(~ respuestas | explicativas) con esa selección.
+  output$t1_ui <- renderUI({ dd <- d(); req(dd); s <- spec()
+    all_v <- names(dd)[sapply(dd, var_kind) != "empty"]; fac_v <- vars_for_role(dd, role("", "factor"))
+    tagList(
+      selectInput("t1_rows", "Variables de respuesta (izquierda de «|»; filas)", choices = all_v, multiple = TRUE, width = "100%"),
+      selectInput("t1_cols", "Variables explicativas o de grupo (derecha de «|»; columnas)", choices = fac_v, multiple = TRUE, width = "100%"),
+      selectInput("t1_fac", "Respuestas numéricas que son categorías (opcional)", choices = fac_v, multiple = TRUE, width = "100%"),
+      selectInput("t1_stats", "Estadísticos de las variables numéricas", choices = .t1_stats, selected = "default", width = "100%"),
+      checkboxInput("t1_overall", "Incluir la columna «Overall» (total)", TRUE),
+      helpText("Si no elige variables de respuesta, se muestra la tabla descriptiva propia del análisis seleccionado. Una explicativa: columnas por nivel, como en table1(~ VH | Group); dos: columnas anidadas, como en table1(~ VH | Group*Cure.time). La tabla elegida aquí es la que se incluye en el reporte."),
+      uiOutput("t1_call")) })
+  outputOptions(output, "t1_ui", suspendWhenHidden = FALSE)
+  t1_sel <- reactive({ r <- input$t1_rows; f <- input$t1_fac; if (!length(r) && !length(f)) return(NULL)
+    list(v = list(response = r %||% character(0), explanatory = input$t1_cols %||% character(0), factors = f %||% character(0)),
+         opts = list(stats = input$t1_stats %||% "default", overall = !isFALSE(input$t1_overall))) })
+  t1_for <- function(dd, s) { cs <- t1_sel()
+    if (is.null(cs)) return(tryCatch(s$descriptives(dd, v()), error = function(e) NULL))
+    tryCatch(.t1_make(dd, cs$v, cs$opts)$t1, error = function(e) structure(list(msg = conditionMessage(e)), class = "t1_error")) }
+  output$t1_call <- renderUI({ cs <- t1_sel(); dd <- d(); if (is.null(cs) || is.null(dd)) return(NULL)
+    b <- tryCatch(.t1_build(dd, cs$v), error = function(e) NULL); if (is.null(b)) return(NULL)
+    tags$p(class = "small text-info", "Llamada equivalente: ", tags$code(b$call)) })
   output$desc_ui <- renderUI({ L <- d_list(); s <- spec()
-    strata_tabs(names(L), function(i) { t1 <- tryCatch(s$descriptives(L[[i]], v()), error = function(e) NULL)
-      tagList(tags$p(class = "small text-muted", "n = ", nrow(L[[i]])), if (is.null(t1)) tags$em("Este análisis no genera tabla descriptiva.") else table1_html(t1)) }) })
+    strata_tabs(names(L), function(i) { t1 <- t1_for(L[[i]], s)
+      tagList(tags$p(class = "small text-muted", "n = ", nrow(L[[i]])),
+              if (inherits(t1, "t1_error")) tags$div(class = "alert alert-warning small", t1$msg)
+              else if (is.null(t1)) tags$em("Este análisis no genera tabla descriptiva. Elija las variables en el panel de la izquierda para construirla.") else table1_html(t1)) }) })
 
   # ---- supuestos y decisión (por estrato) ------------------------------------------------
   assump_list <- reactive({ L <- d_list(); s <- spec()
@@ -144,7 +170,11 @@ server <- function(input, output, session) {
   output$checks_ui <- renderUI({ A <- assump_list(); s <- spec()
     strata_tabs(names(A), function(i) { a <- A[[i]]; sr <- spec_for(a)
       tagList(tags$div(class = if (isTRUE(a$decision$parametric)) "alert alert-success py-2" else "alert alert-warning py-2", tags$b(a$decision$reason), tags$br(), "Prueba que se ejecutará: ", tags$b(sr$label)),
-              checks_ui(a$checks)) }) })
+              checks_ui(a$checks),
+              { X <- tryCatch(qq_data(sr, d_list()[[i]], v()), error = function(e) NULL)
+                if (is.null(X)) NULL else tagList(tags$h6("Gráfico Q-Q (car::qqPlot)"),
+                  tags$p(class = "small text-muted", "Si los puntos permanecen dentro de la banda de confianza, no hay evidencia de una desviación de la normalidad."),
+                  renderPlot(qq_draw(X, read_cos(input, "cos")$colour), height = if (length(X) > 2) 620 else 330, res = 96)) }) }) })
 
   # ---- análisis (por estrato) -----------------------------------------------------------------
   spec_opts <- reactive({ A <- assump_list(); spec_for(A[[1]]) })   # opciones según la prueba del primer estrato
@@ -192,7 +222,7 @@ server <- function(input, output, session) {
       withProgress(message = "Generando reporte Word…", value = 0.2, {
         blocks <- lapply(seq_along(R), function(i) { x <- R[[i]]; if (is.null(x$res)) return(NULL)
           list(name = x$name, n = nrow(L[[i]]), analysis = x$spec$label,
-               t1 = if ("desc" %in% parts) (if (!is.null(x$res$t1)) x$res$t1 else tryCatch(x$spec$descriptives(L[[i]], v()), error = function(e) NULL)) else NULL,
+               t1 = if ("desc" %in% parts) { tt <- if (!is.null(t1_sel())) t1_for(L[[i]], x$spec) else if (!is.null(x$res$t1)) x$res$t1 else t1_for(L[[i]], x$spec); if (inherits(tt, "t1_error")) NULL else tt } else NULL,
                checks = if ("checks" %in% parts) A[[i]]$checks else list(), decision = A[[i]]$decision,
                tables = if ("tables" %in% parts) x$res$tables else list(), posthoc_tables = if ("posthoc" %in% parts && !is.null(P[[i]])) P[[i]]$tables else list(),
                plots = if ("plots" %in% parts) Filter(Negate(is.null), lapply(x$spec$plots, function(pl) tryCatch(pl$fn(L[[i]], v(), x$res, cos), error = function(e) NULL))) else list(),
