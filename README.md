@@ -38,7 +38,7 @@ Cada análisis está vinculado al capítulo del libro donde se explica con un co
 
 | Familia | Análisis | Alternativa no paramétrica |
 |---|---|---|
-| **Estadística descriptiva** | Tabla 1 con la lógica de `table1(~ explicativas \| respuesta)`: variables explicativas en las filas y categorías de la respuesta o del grupo en las columnas | - |
+| **Estadística descriptiva** | Tabla 1 con la lógica de `table1(~ respuestas \| explicativas)`: una o más variables de respuesta en las filas y una o más variables explicativas o de grupo en las columnas (dos se anidan, como en `~ VH \| Group*Cure.time`) | - |
 | **Comparación de medias** | Prueba t independiente | Wilcoxon suma de rangos (Mann-Whitney) |
 | | Prueba t apareada | Wilcoxon de rangos con signo |
 | | ANOVA de una vía | Kruskal-Wallis |
